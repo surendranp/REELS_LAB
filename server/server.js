@@ -12,8 +12,11 @@ const upload = multer({ dest: 'uploads/' });
 
 // Serve static files from the output directory
 app.use('/output', express.static(path.join(__dirname, 'output')));
+
+// Serve static files (like index.html, styles, and JS) from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Route for reel generation
 app.post('/generate-reel', upload.single('image'), async (req, res) => {
     const { description, duration } = req.body;
     const uploadedImage = req.file.path;
@@ -30,9 +33,12 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
         res.status(500).json({ message: error.message || 'Error generating reel.' });
     }
 });
+
+// Serve index.html for the root URL
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
 // Use dynamic port for Railway deployment
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
