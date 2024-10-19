@@ -10,12 +10,12 @@ async function generateVoiceOver(text) {
 
     const body = JSON.stringify({
         text: text,
-        voice: 'Relentless Giant Forest Hog', // Make sure to use a valid voice ID
+        voice: 'your_voice_id_here', // Replace with your actual voice ID
         // Other parameters as necessary
     });
 
     console.log('Sending voiceover request to Eleven Labs:', body); // Log the request body
-    
+
     const response = await fetch(url, {
         method: 'POST',
         headers: headers,
