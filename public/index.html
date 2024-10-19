@@ -3,46 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
     <title>Reels Lab</title>
 </head>
 <body>
     <h1>Reels Lab</h1>
     <form id="reel-form" enctype="multipart/form-data">
-        <label for="image">Upload Image:</label>
-        <input type="file" id="image" name="image" accept="image/*" required>
-
-        <label for="description">Description:</label>
-        <textarea id="description" name="description" required></textarea>
-
-        <label for="duration">Reel Duration (seconds):</label>
-        <input type="number" id="duration" name="duration" min="1" required>
-
+        <div>
+            <label for="image">Upload Image:</label>
+            <input type="file" id="image" name="image" accept="image/*" required>
+        </div>
+        <div>
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description" required>
+        </div>
+        <div>
+            <label for="duration">Reel Duration (seconds):</label>
+            <input type="number" id="duration" name="duration" required>
+        </div>
         <button type="submit">Generate Reel</button>
     </form>
-    <div id="result"></div>
-    <div id="download-container" style="display: none;">
-        <a id="download-link" href="#" download>Download Reel</a>
-    </div>
 
-    <script>
-        document.getElementById('reel-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const response = await fetch('/generate-reel', {
-                method: 'POST',
-                body: formData,
-            });
+    <div id="result"></div> <!-- This will hold the video and download link -->
 
-            const result = await response.json();
-            if (response.ok) {
-                document.getElementById('result').innerText = result.message;
-                document.getElementById('download-link').href = result.reel; // Set the download link
-                document.getElementById('download-container').style.display = 'block'; // Show download button
-            } else {
-                document.getElementById('result').innerText = result.message || 'Error!';
-            }
-        });
-    </script>
+    <script src="script.js"></script> <!-- Include your script -->
 </body>
 </html>

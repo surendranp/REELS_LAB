@@ -1,60 +1,46 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const fetch = require('node-fetch');
-const { generateVoiceOver } = require('./voiceGenerator'); // Assuming you have a voice generator module
+const multer = require('multer');
+const path = require('path');
+const { generateRelatedImages } = require('./imageGenerator');
+const { generateVoiceOver } = require('./voiceGenerator');
+const { createReel } = require('./videoCreator');
+
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const upload = multer({ dest: path.join(__dirname, '../uploads') }); // Upload path
 
-app.use(bodyParser.json());
-app.use(express.static('public')); // Serve static files
+// Serve static files from the output directory
+app.use('/output', express.static(path.join(__dirname, '../output')));
 
-// Endpoint to generate a reel
-app.post('/generate-reel', async (req, res) => {
-    const { imageUrl, description, duration } = req.body;
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
-    if (!imageUrl || !description || !duration) {
-        return res.status(400).json({ error: 'All fields are required.' });
-    }
+// Route for reel generation
+app.post('/generate-reel', upload.single('image'), async (req, res) => {
+    const { description, duration } = req.body;
+    const uploadedImage = req.file.path;
 
     try {
-        // Extract query for Unsplash API from the description
-        const query = extractQueryFromDescription(description);
-
-        // Fetch additional images from Unsplash
-        const unsplashImages = await fetchUnsplashImages(query);
-        
-        // Generate voice-over using Eleven Labs API
+        const query = description.split(' ')[0]; // Example: using the first word as the query
+        const relatedImages = await generateRelatedImages(query);
         const voiceOver = await generateVoiceOver(description);
+        const reel = await createReel(relatedImages, voiceOver, duration);
 
-        // Combine images and voice-over into a reel (this is where you would implement your reel generation logic)
-
-        res.status(200).json({ success: true, images: unsplashImages, voiceOver });
+        res.json({ message: 'Reel generated!', reel: `/output/${path.basename(reel)}` });
     } catch (error) {
-        console.error('Error generating reel:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error(error);
+        res.status(500).json({ message: error.message || 'Error generating reel.' });
     }
 });
 
-// Function to extract query from description
-function extractQueryFromDescription(description) {
-    // Implement your logic to extract a query from the description
-    return description.split(' ').slice(0, 3).join(' '); // Example: take the first 3 words
-}
+// Serve index.html for the root URL
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public', 'index.html')); // Adjusted to go one level up
+});
 
-// Function to fetch images from Unsplash API
-async function fetchUnsplashImages(query) {
-    const response = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&client_id=YOUR_UNSPLASH_API_KEY`);
-    
-    if (!response.ok) {
-        throw new Error('Failed to fetch images from Unsplash');
-    }
-
-    const data = await response.json();
-    return data.results.map(image => image.urls.small); // Return small image URLs
-}
-
-// Start the server
+// Use dynamic port for Railway deployment
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
