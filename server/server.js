@@ -30,7 +30,9 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
         res.status(500).json({ message: error.message || 'Error generating reel.' });
     }
 });
-
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
 // Use dynamic port for Railway deployment
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
