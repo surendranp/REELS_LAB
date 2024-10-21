@@ -1,11 +1,8 @@
 const ffmpeg = require('fluent-ffmpeg');
-const ffmpegStatic = require('ffmpeg-static'); // Import ffmpeg-static
+const ffmpegStatic = require('ffmpeg-static');
 const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
-
-// Set ffmpeg path to use the static binary
-ffmpeg.setFfmpegPath(ffmpegStatic.path);
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
@@ -30,6 +27,9 @@ async function createReel(images, voiceOver, duration) {
 
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
+
+        // Set the ffmpeg binary path directly here
+        command.setFfmpegPath(ffmpegStatic.path);
 
         // Add each image as an input with a fixed duration
         tempImageFiles.forEach((file, index) => {
