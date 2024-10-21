@@ -1,16 +1,16 @@
-import fs from 'fs';
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg'; // Import createFFmpeg and fetchFile
 import path from 'path';
+import fs from 'fs';
 import fetch from 'node-fetch';
 
-const { createFFmpeg, fetchFile } = await import('@ffmpeg/ffmpeg');
-
-// Create an FFmpeg instance with logging enabled
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ log: true }); // Create an instance of FFmpeg
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
+    await ffmpeg.load(); // Load the ffmpeg.wasm
+
     const outputPath = path.join(process.cwd(), 'output', 'reel.mp4'); // Path to the output video
-    const tempImageFiles = images.map((image, index) => {
+    const tempImageFiles = images.map((_, index) => {
         return path.join(process.cwd(), 'uploads', `image${index}.jpg`); // Temporary image file path
     });
 
@@ -29,40 +29,22 @@ async function createReel(images, voiceOver, duration) {
         }
     }));
 
-    // Load FFmpeg
-    await ffmpeg.load();
-
-    // Read image files into FFmpeg's memory
-    for (const [index, file] of tempImageFiles.entries()) {
-        ffmpeg.FS('writeFile', `image${index}.jpg`, await fetchFile(file));
+    // Prepare FFmpeg commands
+    for (let i = 0; i < tempImageFiles.length; i++) {
+        ffmpeg.FS('writeFile', `image${i}.jpg`, await fetchFile(tempImageFiles[i]));
+    }
+    
+    if (fs.existsSync(voiceOver)) {
+        ffmpeg.FS('writeFile', 'voiceover.mp3', await fetchFile(voiceOver));
+    } else {
+        throw new Error('Voiceover file not found.');
     }
 
-    // Write the voiceover file into FFmpeg's memory
-    ffmpeg.FS('writeFile', 'voiceover.mp3', await fetchFile(voiceOver));
+    await ffmpeg.run('-framerate', '1', '-i', 'image%d.jpg', '-i', 'voiceover.mp3', '-c:v', 'libx264', '-c:a', 'aac', '-pix_fmt', 'yuv420p', outputPath);
 
-    // Run the FFmpeg command
-    await ffmpeg.run(
-        '-framerate', '1',
-        '-i', 'image%d.jpg',
-        '-i', 'voiceover.mp3',
-        '-c:v', 'libx264',
-        '-c:a', 'aac',
-        '-pix_fmt', 'yuv420p',
-        '-shortest',
-        outputPath
-    );
-
-    // Read the result
-    const data = ffmpeg.FS('readFile', outputPath);
-
-    // Write the result to the filesystem
-    fs.writeFileSync(outputPath, Buffer.from(data));
-
-    // Cleanup temporary image files
+    // Clean up temporary files
     tempImageFiles.forEach(file => fs.unlinkSync(file));
-
-    console.log('Video successfully created:', outputPath);
-    return outputPath;
+    return outputPath; // Return the output path
 }
 
 export { createReel };
