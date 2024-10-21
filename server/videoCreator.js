@@ -1,16 +1,16 @@
-const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
-const path = require('path');
-const fs = require('fs');
-const fetch = require('node-fetch');
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import path from 'path';
+import fs from 'fs';
+import fetch from 'node-fetch';
 
 // Create an FFmpeg instance
 const ffmpeg = createFFmpeg({ log: true });
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
-    const outputPath = path.join(__dirname, '../output', 'reel.mp4'); // Path to the output video
+    const outputPath = path.join(process.cwd(), 'output', 'reel.mp4'); // Path to the output video
     const tempImageFiles = images.map((_, index) => {
-        return path.join(__dirname, '../uploads', `image${index}.jpg`); // Temporary image file path
+        return path.join(process.cwd(), 'uploads', `image${index}.jpg`); // Temporary image file path
     });
 
     // Download images to local filesystem
@@ -64,4 +64,4 @@ async function createReel(images, voiceOver, duration) {
     return outputPath;
 }
 
-module.exports = { createReel };
+export { createReel };

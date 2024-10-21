@@ -1,20 +1,20 @@
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const { generateRelatedImages } = require('./imageGenerator');
-const { generateVoiceOver } = require('./voiceGenerator');
-const { createReel } = require('./videoCreator');
+import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import { generateRelatedImages } from './imageGenerator.js'; // Note the .js extension
+import { generateVoiceOver } from './voiceGenerator.js'; // Note the .js extension
+import { createReel } from './videoCreator.js'; // Note the .js extension
 
 require('dotenv').config();
 
 const app = express();
-const upload = multer({ dest: path.join(__dirname, '../uploads') }); // Upload path
+const upload = multer({ dest: path.join(process.cwd(), 'uploads') }); // Upload path
 
 // Serve static files from the output directory
-app.use('/output', express.static(path.join(__dirname, '../output')));
+app.use('/output', express.static(path.join(process.cwd(), 'output')));
 
 // Serve static files from the public directory
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 // Route for reel generation
 app.post('/generate-reel', upload.single('image'), async (req, res) => {
@@ -46,7 +46,7 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
 
 // Serve index.html for the root URL
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public', 'index.html')); // Adjusted to go one level up
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html')); // Adjusted to go one level up
 });
 
 // Use dynamic port for Railway deployment
