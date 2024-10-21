@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const { ELEVEN_LABS_API_KEY } = process.env;
 
 async function generateVoiceOver(text) {
-    const url = 'https://api.elevenlabs.io/v1/text-to-speech/generate';
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM`; // Replace with correct voice ID
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${ELEVEN_LABS_API_KEY}`,
@@ -14,6 +14,7 @@ async function generateVoiceOver(text) {
         // Other parameters as necessary
     });
 
+    console.log('API Key:', ELEVEN_LABS_API_KEY); // Debugging log for API key
     console.log('Sending voiceover request to Eleven Labs:', body); // Log the request body
 
     const response = await fetch(url, {
