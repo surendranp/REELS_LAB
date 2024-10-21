@@ -18,25 +18,32 @@ async function createReel(images, voiceOver, duration) {
     }));
 
     return new Promise((resolve, reject) => {
-        ffmpeg()
-            .input(`concat:${tempImageFiles.join('|')}`) // Concatenate images for video
-            .input(voiceOver) // Input audio file
+        const command = ffmpeg();
+
+        // Add images to ffmpeg input
+        tempImageFiles.forEach((file) => {
+            command.input(file).inputOptions(['-t 3']); // Show each image for 3 seconds (adjust as needed)
+        });
+
+        // Add the voiceover as an audio track
+        command.input(voiceOver)
             .outputOptions([
-                `-r 1`, // Frame rate of 1 fps
-                `-t ${duration}`, // Duration of the video
+                '-r 30', // Set framerate to 30 FPS
                 '-c:v libx264', // Codec for video
                 '-c:a aac', // Codec for audio
-                '-strict experimental', // Allow experimental features
+                '-pix_fmt yuv420p', // Set pixel format
                 '-shortest' // Stop when the shortest input ends
             ])
             .output(outputPath)
             .on('end', () => {
-                // Cleanup temporary files
+                console.log('Video successfully created:', outputPath);
+                // Cleanup temporary image files
                 tempImageFiles.forEach(file => fs.unlinkSync(file));
                 resolve(outputPath);
             })
             .on('error', (err) => {
-                // Cleanup temporary files on error
+                console.error('Error creating reel:', err.message);
+                // Cleanup temporary image files on error
                 tempImageFiles.forEach(file => fs.unlinkSync(file));
                 reject(err);
             })
