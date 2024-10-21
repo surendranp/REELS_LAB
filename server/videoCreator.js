@@ -3,13 +3,12 @@ const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
 
-// Create an FFmpeg instance
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ log: true }); // Create an FFmpeg instance with logging enabled
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
     const outputPath = path.join(__dirname, '../output', 'reel.mp4'); // Path to the output video
-    const tempImageFiles = images.map((_, index) => {
+    const tempImageFiles = images.map((image, index) => {
         return path.join(__dirname, '../uploads', `image${index}.jpg`); // Temporary image file path
     });
 
@@ -31,12 +30,12 @@ async function createReel(images, voiceOver, duration) {
     // Load FFmpeg
     await ffmpeg.load();
 
-    // Write image files to FFmpeg's virtual filesystem
+    // Read image files into FFmpeg's memory
     for (const [index, file] of tempImageFiles.entries()) {
         ffmpeg.FS('writeFile', `image${index}.jpg`, await fetchFile(file));
     }
 
-    // Write the voiceover file into FFmpeg's virtual filesystem
+    // Write the voiceover file into FFmpeg's memory
     ffmpeg.FS('writeFile', 'voiceover.mp3', await fetchFile(voiceOver));
 
     // Run the FFmpeg command
@@ -48,11 +47,11 @@ async function createReel(images, voiceOver, duration) {
         '-c:a', 'aac',
         '-pix_fmt', 'yuv420p',
         '-shortest',
-        'reel.mp4' // Output filename in the virtual filesystem
+        outputPath
     );
 
     // Read the result
-    const data = ffmpeg.FS('readFile', 'reel.mp4');
+    const data = ffmpeg.FS('readFile', outputPath);
 
     // Write the result to the filesystem
     fs.writeFileSync(outputPath, Buffer.from(data));
