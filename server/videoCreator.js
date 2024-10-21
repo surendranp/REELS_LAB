@@ -1,14 +1,13 @@
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg'; // Import createFFmpeg and fetchFile
+import ffmpeg from 'fluent-ffmpeg'; // Use fluent-ffmpeg
 import path from 'path';
 import fs from 'fs';
 import fetch from 'node-fetch';
+import ffmpegPath from 'ffmpeg-static'; // Use ffmpeg-static for the FFmpeg path
 
-const ffmpeg = createFFmpeg({ log: true }); // Create an instance of FFmpeg
+ffmpeg.setFfmpegPath(ffmpegPath); // Set the path to FFmpeg
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
-    await ffmpeg.load(); // Load the ffmpeg.wasm
-
     const outputPath = path.join(process.cwd(), 'output', 'reel.mp4'); // Path to the output video
     const tempImageFiles = images.map((_, index) => {
         return path.join(process.cwd(), 'uploads', `image${index}.jpg`); // Temporary image file path
@@ -29,22 +28,44 @@ async function createReel(images, voiceOver, duration) {
         }
     }));
 
-    // Prepare FFmpeg commands
-    for (let i = 0; i < tempImageFiles.length; i++) {
-        ffmpeg.FS('writeFile', `image${i}.jpg`, await fetchFile(tempImageFiles[i]));
-    }
-    
-    if (fs.existsSync(voiceOver)) {
-        ffmpeg.FS('writeFile', 'voiceover.mp3', await fetchFile(voiceOver));
-    } else {
-        throw new Error('Voiceover file not found.');
-    }
+    return new Promise((resolve, reject) => {
+        const command = ffmpeg();
 
-    await ffmpeg.run('-framerate', '1', '-i', 'image%d.jpg', '-i', 'voiceover.mp3', '-c:v', 'libx264', '-c:a', 'aac', '-pix_fmt', 'yuv420p', outputPath);
+        // Add each image as an input with a fixed duration
+        tempImageFiles.forEach((file, index) => {
+            command.input(file).inputOptions([`-t ${duration / tempImageFiles.length}`]); // Divide the total duration by number of images
+        });
 
-    // Clean up temporary files
-    tempImageFiles.forEach(file => fs.unlinkSync(file));
-    return outputPath; // Return the output path
+        // Add the voiceover as an audio track
+        if (fs.existsSync(voiceOver)) {
+            command.input(voiceOver);
+        } else {
+            console.error('Voiceover file not found.');
+            reject(new Error('Voiceover file not found.'));
+        }
+
+        command.outputOptions([
+            '-r 30', // Set frame rate to 30 FPS
+            '-c:v libx264', // Codec for video
+            '-c:a aac', // Codec for audio
+            '-pix_fmt yuv420p', // Set pixel format
+            '-shortest' // Stop when the shortest input ends
+        ])
+        .output(outputPath)
+        .on('end', () => {
+            console.log('Video successfully created:', outputPath);
+            // Cleanup temporary image files
+            tempImageFiles.forEach(file => fs.unlinkSync(file));
+            resolve(outputPath);
+        })
+        .on('error', (err) => {
+            console.error('Error creating reel:', err.message);
+            // Cleanup temporary image files on error
+            tempImageFiles.forEach(file => fs.unlinkSync(file));
+            reject(err);
+        })
+        .run();
+    });
 }
 
 export { createReel };
