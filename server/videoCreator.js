@@ -35,10 +35,12 @@ async function createReel(images, voiceOver, duration) {
         // Add each image as an input with a fixed duration
         tempImageFiles.forEach((file, index) => {
             if (fs.existsSync(file)) {
-                command.input(file).inputOptions([`-t ${duration / tempImageFiles.length}`]); // Divide the total duration by number of images
+                // Set the duration for each image based on total duration divided by number of images
+                command.input(file).inputOptions([`-t ${duration / tempImageFiles.length}`]);
             } else {
                 console.error(`Image file ${file} not found.`);
                 reject(new Error(`Image file ${file} not found.`));
+                return; // Exit the forEach loop
             }
         });
 
@@ -48,6 +50,7 @@ async function createReel(images, voiceOver, duration) {
         } else {
             console.error('Voiceover file not found.');
             reject(new Error('Voiceover file not found.'));
+            return; // Exit the promise if the voiceover is not found
         }
 
         command.outputOptions([
