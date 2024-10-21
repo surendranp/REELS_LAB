@@ -6,6 +6,7 @@ const ffmpegPath = require('ffmpeg-static'); // Use ffmpeg-static to get the pat
 
 // Set the ffmpeg path dynamically
 ffmpeg.setFfmpegPath(ffmpegPath.path);
+console.log('Using FFmpeg path:', ffmpegPath.path); // Log the FFmpeg path for debugging
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
@@ -35,12 +36,10 @@ async function createReel(images, voiceOver, duration) {
         // Add each image as an input with a fixed duration
         tempImageFiles.forEach((file, index) => {
             if (fs.existsSync(file)) {
-                // Set the duration for each image based on total duration divided by number of images
-                command.input(file).inputOptions([`-t ${duration / tempImageFiles.length}`]);
+                command.input(file).inputOptions([`-t ${duration / tempImageFiles.length}`]); // Divide the total duration by number of images
             } else {
                 console.error(`Image file ${file} not found.`);
                 reject(new Error(`Image file ${file} not found.`));
-                return; // Exit the forEach loop
             }
         });
 
@@ -50,7 +49,6 @@ async function createReel(images, voiceOver, duration) {
         } else {
             console.error('Voiceover file not found.');
             reject(new Error('Voiceover file not found.'));
-            return; // Exit the promise if the voiceover is not found
         }
 
         command.outputOptions([
