@@ -10,7 +10,7 @@ async function generateVoiceOver(text) {
 
     const body = JSON.stringify({
         text: text,
-        voice: 'Relentless Peregrine Falcon', // Replace with your actual voice ID
+        voice: '21m00Tcm4TlvDq8ikWAM', // Replace with your actual voice ID
         // Other parameters as necessary
     });
 
