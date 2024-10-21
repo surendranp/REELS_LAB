@@ -2,9 +2,10 @@ const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
+const ffmpegPath = require('ffmpeg-static'); // Use ffmpeg-static to get the path dynamically
 
-// Set the ffmpeg path explicitly for Railway environment
-ffmpeg.setFfmpegPath('/usr/bin/ffmpeg'); // Use the path for ffmpeg on Railway
+// Set the ffmpeg path dynamically
+ffmpeg.setFfmpegPath(ffmpegPath.path);
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
