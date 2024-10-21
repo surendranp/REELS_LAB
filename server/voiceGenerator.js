@@ -5,9 +5,10 @@ async function generateVoiceOver(text) {
     const url = 'https://api.elevenlabs.io/v1/text-to-speech/generate';
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ELEVEN_LABS_API_KEY.trim()}`, // Ensure no extra spaces
+        'Authorization': `Bearer ${ELEVEN_LABS_API_KEY.trim()}`, // Use trim() to avoid extra spaces
     };
 
+    console.log('Using ELEVEN_LABS_API_KEY:', ELEVEN_LABS_API_KEY); // Log the API key for debugging
     const body = JSON.stringify({
         text: text,
         voice: '21m00Tcm4TlvDq8ikWAM', // Replace with your actual voice ID
