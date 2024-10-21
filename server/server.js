@@ -18,18 +18,28 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Route for reel generation
 app.post('/generate-reel', upload.single('image'), async (req, res) => {
+    console.log('Request body:', req.body);
+    console.log('Uploaded file:', req.file);
+
     const { description, duration } = req.body;
     const uploadedImage = req.file.path;
 
     try {
         const query = description.split(' ')[0]; // Example: using the first word as the query
+        console.log('Query for related images:', query);
+
         const relatedImages = await generateRelatedImages(query);
+        console.log('Related images:', relatedImages);
+
         const voiceOver = await generateVoiceOver(description);
+        console.log('Voiceover saved at:', voiceOver);
+
         const reel = await createReel(relatedImages, voiceOver, duration);
+        console.log('Reel created at:', reel);
 
         res.json({ message: 'Reel generated!', reel: `/output/${path.basename(reel)}` });
     } catch (error) {
-        console.error('Error in /generate-reel route:', error); // More specific error logging
+        console.error('Error in /generate-reel route:', error);
         res.status(500).json({ message: error.message || 'Error generating reel.' });
     }
 });
