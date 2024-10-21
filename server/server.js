@@ -4,8 +4,9 @@ import path from 'path';
 import { generateRelatedImages } from './imageGenerator.js';
 import { generateVoiceOver } from './voiceGenerator.js';
 import { createReel } from './videoCreator.js';
+import dotenv from 'dotenv';
 
-require('dotenv').config();
+dotenv.config(); // Load environment variables
 
 const app = express();
 const upload = multer({ dest: path.join(process.cwd(), 'uploads') }); // Upload path
@@ -46,7 +47,7 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
 
 // Serve index.html for the root URL
 app.get('/', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'public', 'index.html')); // Adjusted to go one level up
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html')); // Serve the index.html file
 });
 
 // Use dynamic port for Railway deployment

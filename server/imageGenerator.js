@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch'; // Using ES module syntax
 const { UNSPLASH_ACCESS_KEY } = process.env;
 
 /**
@@ -23,4 +23,4 @@ async function generateRelatedImages(query) {
     return data.results.map(image => image.urls.regular);
 }
 
-module.exports = { generateRelatedImages };
+export { generateRelatedImages }; // Changed to ES module export

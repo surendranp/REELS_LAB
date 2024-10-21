@@ -1,6 +1,6 @@
-const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
+import fetch from 'node-fetch'; // Using ES module syntax
+import fs from 'fs';
+import path from 'path';
 const { ELEVEN_LABS_API_KEY } = process.env;
 
 async function generateVoiceOver(text) {
@@ -49,4 +49,4 @@ async function generateVoiceOver(text) {
     return voiceoverPath; // Return the saved file path for further use in video creation
 }
 
-module.exports = { generateVoiceOver };
+export { generateVoiceOver }; // Changed to ES module export
