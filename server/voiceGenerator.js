@@ -11,7 +11,7 @@ async function generateVoiceOver(text) {
     console.log('Using ELEVEN_LABS_API_KEY:', ELEVEN_LABS_API_KEY); // Log the API key for debugging
     const body = JSON.stringify({
         text: text,
-        voice: '21m00Tcm4TlvDq8ikWAM', // Replace with your actual voice ID
+        voice: 'Rachel', // Replace with your actual voice ID
     });
 
     console.log('Sending voiceover request to Eleven Labs:', body); // Log the request body
