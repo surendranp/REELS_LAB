@@ -13,7 +13,15 @@ ffmpeg.setFfmpegPath(ffmpegPath); // Set the path to FFmpeg
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
-    const outputPath = path.join(__dirname, '../output', 'reel.mp4'); // Path to the output video
+    const outputDir = path.join(__dirname, '../output'); // Path to the output directory
+    const outputPath = path.join(outputDir, 'reel.mp4'); // Path to the output video
+
+    // Ensure the output directory exists
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+        console.log('Output directory created:', outputDir);
+    }
+
     const tempImageFiles = images.map((_, index) => {
         return path.join(__dirname, '../uploads', `image${index}.jpg`); // Temporary image file path
     });
