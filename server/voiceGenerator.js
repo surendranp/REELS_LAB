@@ -1,7 +1,12 @@
-import fetch from 'node-fetch'; // Using ES module syntax
+import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 const { ELEVEN_LABS_API_KEY } = process.env;
+
+// Get the directory name
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function generateVoiceOver(text) {
     const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Ensure this is the correct voice ID for your use case
@@ -49,4 +54,4 @@ async function generateVoiceOver(text) {
     return voiceoverPath; // Return the saved file path for further use in video creation
 }
 
-export { generateVoiceOver }; // Changed to ES module export
+export { generateVoiceOver };

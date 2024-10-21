@@ -3,14 +3,19 @@ import path from 'path';
 import fs from 'fs';
 import fetch from 'node-fetch';
 import ffmpegPath from 'ffmpeg-static'; // Use ffmpeg-static for the FFmpeg path
+import { fileURLToPath } from 'url'; // Import for dirname functionality
+
+// Get the directory name
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 ffmpeg.setFfmpegPath(ffmpegPath); // Set the path to FFmpeg
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
-    const outputPath = path.join(process.cwd(), 'output', 'reel.mp4'); // Path to the output video
+    const outputPath = path.join(__dirname, '../output', 'reel.mp4'); // Path to the output video
     const tempImageFiles = images.map((_, index) => {
-        return path.join(process.cwd(), 'uploads', `image${index}.jpg`); // Temporary image file path
+        return path.join(__dirname, '../uploads', `image${index}.jpg`); // Temporary image file path
     });
 
     // Download images to local filesystem
