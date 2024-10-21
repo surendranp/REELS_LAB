@@ -40,7 +40,7 @@ document.getElementById('reel-form').addEventListener('submit', async (event) =>
         // Display video and download link
         result.innerHTML = `
             <p>${data.message}</p>
-            <video controls src="${data.reel}" style="max-width: 20%; height: auto;"></video>
+            <video controls src="${data.reel}" style="max-width: 10%; height: auto;"></video>
             <br>
             <a href="${data.reel}" download="reel.mp4" class="download-button">Download Video</a>
         `;

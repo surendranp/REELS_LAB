@@ -57,12 +57,14 @@ async function createReel(images, voiceOver, duration) {
             reject(new Error('Voiceover file not found.'));
         }
 
+        // Set FFmpeg options for video and audio
         command.outputOptions([
             '-r 30', // Set frame rate to 30 FPS
             '-c:v libx264', // Codec for video
             '-c:a aac', // Codec for audio
-            '-pix_fmt yuv420p', // Set pixel format
-            '-shortest' // Stop when the shortest input ends
+            '-pix_fmt yuv420p', // Set pixel format for compatibility
+            '-shortest', // Stops when the shortest input (audio or video) ends
+            '-movflags +faststart' // Web video compatibility
         ])
         .output(outputPath)
         .on('end', () => {
