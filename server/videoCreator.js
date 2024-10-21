@@ -1,27 +1,30 @@
 const ffmpeg = require('fluent-ffmpeg');
+const ffmpegStatic = require('ffmpeg-static'); // Import ffmpeg-static
 const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
 
+// Set ffmpeg path to use the static binary
+ffmpeg.setFfmpegPath(ffmpegStatic.path);
+
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
     const outputPath = path.join(__dirname, '../output', 'reel.mp4'); // Path to the output video
-    const tempImageFiles = images.map((image, index) => {
-        return path.join(__dirname, '../uploads', `image${index}.jpg`); // Temporary image file path
-    });
+    const tempImageFiles = images.map((_, index) => path.join(__dirname, '../uploads', `image${index}.jpg`)); // Temporary image file paths
 
     // Download images to local filesystem
     await Promise.all(images.map(async (imageUrl, index) => {
         try {
             const response = await fetch(imageUrl);
             if (!response.ok) {
-                throw new Error(`Failed to download image: ${response.statusText}`);
+                throw new Error(`Failed to download image ${index}: ${response.statusText}`);
             }
             const buffer = await response.buffer();
             fs.writeFileSync(tempImageFiles[index], buffer);
+            console.log(`Downloaded image ${index}: ${tempImageFiles[index]}`);
         } catch (error) {
             console.error(`Error downloading image ${index}:`, error);
-            throw error;
+            throw error; // Rethrow to handle in the outer function
         }
     }));
 
