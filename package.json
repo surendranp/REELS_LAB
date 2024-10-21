@@ -1,12 +1,12 @@
 {
   "name": "reels_lab",
   "version": "1.0.0",
-  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server/server.js"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.10",
     "axios": "^0.21.1",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
@@ -15,7 +15,6 @@
     "fs": "0.0.1-security",
     "multer": "^1.4.3",
     "node-fetch": "^2.7.0",
-    "path": "^0.12.7",
-    "@ffmpeg/ffmpeg": "^0.11.8" 
+    "path": "^0.12.7"
   }
 }

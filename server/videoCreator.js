@@ -1,14 +1,10 @@
+const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
 
-// Dynamic import of @ffmpeg/ffmpeg
-let createFFmpeg, fetchFile;
-(async () => {
-    const ffmpegModule = await import('@ffmpeg/ffmpeg');
-    createFFmpeg = ffmpegModule.createFFmpeg;
-    fetchFile = ffmpegModule.fetchFile;
-})();
+// Create an FFmpeg instance
+const ffmpeg = createFFmpeg({ log: true });
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
@@ -32,7 +28,7 @@ async function createReel(images, voiceOver, duration) {
         }
     }));
 
-    const ffmpeg = createFFmpeg({ log: true });
+    // Load FFmpeg
     await ffmpeg.load();
 
     // Write image files to FFmpeg's virtual filesystem
