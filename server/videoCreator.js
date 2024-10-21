@@ -75,4 +75,4 @@ async function createReel(images, voiceOver, duration) {
     });
 }
 
-module.exports = { createReel };
+module.exports = { createReel }; 
