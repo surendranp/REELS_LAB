@@ -29,7 +29,7 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
 
         res.json({ message: 'Reel generated!', reel: `/output/${path.basename(reel)}` });
     } catch (error) {
-        console.error(error);
+        console.error('Error in /generate-reel route:', error); // More specific error logging
         res.status(500).json({ message: error.message || 'Error generating reel.' });
     }
 });
