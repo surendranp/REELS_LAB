@@ -1,17 +1,15 @@
-const ffmpeg = require('fluent-ffmpeg');
+const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
-const ffmpegPath = require('ffmpeg-static'); // Use ffmpeg-static to get the path dynamically
 
-// Set the ffmpeg path dynamically
-ffmpeg.setFfmpegPath(ffmpegPath.path);
-console.log('Using FFmpeg path:', ffmpegPath.path); // Log the FFmpeg path for debugging
+// Create an FFmpeg instance
+const ffmpeg = createFFmpeg({ log: true });
 
 // Function to create a reel from images and voiceover
 async function createReel(images, voiceOver, duration) {
     const outputPath = path.join(__dirname, '../output', 'reel.mp4'); // Path to the output video
-    const tempImageFiles = images.map((image, index) => {
+    const tempImageFiles = images.map((_, index) => {
         return path.join(__dirname, '../uploads', `image${index}.jpg`); // Temporary image file path
     });
 
@@ -30,49 +28,40 @@ async function createReel(images, voiceOver, duration) {
         }
     }));
 
-    return new Promise((resolve, reject) => {
-        const command = ffmpeg();
+    // Load FFmpeg
+    await ffmpeg.load();
 
-        // Add each image as an input with a fixed duration
-        tempImageFiles.forEach((file, index) => {
-            if (fs.existsSync(file)) {
-                command.input(file).inputOptions([`-t ${duration / tempImageFiles.length}`]); // Divide the total duration by number of images
-            } else {
-                console.error(`Image file ${file} not found.`);
-                reject(new Error(`Image file ${file} not found.`));
-            }
-        });
+    // Write image files to FFmpeg's virtual filesystem
+    for (const [index, file] of tempImageFiles.entries()) {
+        ffmpeg.FS('writeFile', `image${index}.jpg`, await fetchFile(file));
+    }
 
-        // Add the voiceover as an audio track
-        if (fs.existsSync(voiceOver)) {
-            command.input(voiceOver);
-        } else {
-            console.error('Voiceover file not found.');
-            reject(new Error('Voiceover file not found.'));
-        }
+    // Write the voiceover file into FFmpeg's virtual filesystem
+    ffmpeg.FS('writeFile', 'voiceover.mp3', await fetchFile(voiceOver));
 
-        command.outputOptions([
-            '-r 30', // Set frame rate to 30 FPS
-            '-c:v libx264', // Codec for video
-            '-c:a aac', // Codec for audio
-            '-pix_fmt yuv420p', // Set pixel format
-            '-shortest' // Stop when the shortest input ends
-        ])
-        .output(outputPath)
-        .on('end', () => {
-            console.log('Video successfully created:', outputPath);
-            // Cleanup temporary image files
-            tempImageFiles.forEach(file => fs.unlinkSync(file));
-            resolve(outputPath);
-        })
-        .on('error', (err) => {
-            console.error('Error creating reel:', err.message);
-            // Cleanup temporary image files on error
-            tempImageFiles.forEach(file => fs.unlinkSync(file));
-            reject(err);
-        })
-        .run();
-    });
+    // Run the FFmpeg command
+    await ffmpeg.run(
+        '-framerate', '1',
+        '-i', 'image%d.jpg',
+        '-i', 'voiceover.mp3',
+        '-c:v', 'libx264',
+        '-c:a', 'aac',
+        '-pix_fmt', 'yuv420p',
+        '-shortest',
+        'reel.mp4' // Output filename in the virtual filesystem
+    );
+
+    // Read the result
+    const data = ffmpeg.FS('readFile', 'reel.mp4');
+
+    // Write the result to the filesystem
+    fs.writeFileSync(outputPath, Buffer.from(data));
+
+    // Cleanup temporary image files
+    tempImageFiles.forEach(file => fs.unlinkSync(file));
+
+    console.log('Video successfully created:', outputPath);
+    return outputPath;
 }
 
 module.exports = { createReel };
