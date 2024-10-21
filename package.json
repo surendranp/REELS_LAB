@@ -2,6 +2,7 @@
   "name": "reels_lab",
   "version": "1.0.0",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server/server.js"
   },
