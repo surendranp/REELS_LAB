@@ -24,7 +24,7 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 
 app.post('/generate-reel', upload.single('image'), async (req, res) => {
     const { description, duration } = req.body;
-    const userImagePath = req.file.path;  // Path of the user-uploaded image
+    const userImagePath = req.file.path; // Path of the user-uploaded image
 
     try {
         // Ensure the duration is a valid number
@@ -38,8 +38,6 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
 
         // Generate related images using the Unsplash API
         const relatedImages = await generateRelatedImages(query);
-        console.log('Related Images:', relatedImages); // Log the related image URLs
-
         if (relatedImages.length === 0) {
             throw new Error('No related images found.');
         }

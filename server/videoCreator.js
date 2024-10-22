@@ -12,11 +12,6 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 async function downloadImage(imageUrl, outputPath) {
     try {
-        // Check if the URL is absolute
-        if (!/^https?:\/\//i.test(imageUrl)) {
-            throw new Error(`Invalid URL: ${imageUrl}`);
-        }
-
         const response = await fetch(imageUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch image from ${imageUrl}, status: ${response.status}`);
@@ -74,6 +69,12 @@ async function createReel(images, voiceOverPath, duration) {
     });
     console.log(`Voiceover Path: ${voiceOverPath}`);
 
+    // Check if all images exist before running FFmpeg
+    const allFilesExist = allImages.every(file => fs.existsSync(file));
+    if (!allFilesExist) {
+        throw new Error('One or more input files do not exist. Cannot proceed with FFmpeg.');
+    }
+
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
@@ -110,8 +111,10 @@ async function createReel(images, voiceOverPath, duration) {
                 tempImageFiles.forEach(file => fs.unlinkSync(file)); // Clean up temp image files
                 resolve(outputPath);
             })
-            .on('error', (err) => {
-                console.error('Error creating reel video:', err.message); // Log specific FFmpeg error message
+            .on('error', (err, stdout, stderr) => {
+                console.error('Error creating reel video:', err.message);
+                console.error('FFmpeg stdout:', stdout);
+                console.error('FFmpeg stderr:', stderr);
                 tempImageFiles.forEach(file => fs.unlinkSync(file)); // Clean up on error
                 reject(err);
             })
