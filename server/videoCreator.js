@@ -20,7 +20,6 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
     const imagesDir = path.join(process.cwd(), 'uploads');
     const outputDir = path.join(process.cwd(), 'output');
 
-    // Ensure the output directory exists
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
     }
@@ -33,33 +32,31 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
                 return await downloadImage(imageUrl, imageFilePath);
             } else {
                 console.log(`Using local image: ${imageUrl}`);
-                return imageUrl;  // Use local file path for user-uploaded image
+                return imageUrl;
             }
         })
     );
 
     downloadedImages.unshift(userImagePath);
 
-    // Log downloaded images
-    console.log('Downloaded Images:', downloadedImages);
-
     const outputReelPath = path.join(outputDir, 'reel.mp4');
+    const durationPerImage = Math.max(1, duration / downloadedImages.length); // Ensure at least 1 second
 
     return new Promise((resolve, reject) => {
         const ffmpegCommand = ffmpeg();
 
         downloadedImages.forEach((imagePath) => {
             console.log(`Adding image to FFmpeg command: ${imagePath}`);
-            ffmpegCommand.input(imagePath).inputOptions([`-t ${duration / downloadedImages.length}`]);
+            ffmpegCommand.input(imagePath).inputOptions([`-t ${durationPerImage}`]);
         });
 
         ffmpegCommand.input(voiceOverPath);
         console.log(`Voiceover path: ${voiceOverPath}`);
 
-        // Log the full command for debugging
         ffmpegCommand
             .outputOptions([
                 '-y',
+                '-loglevel debug',  // Increased log level for more details
                 '-r 30',
                 '-c:v libx264',
                 '-c:a aac',
@@ -77,14 +74,5 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
                 reject(err);
             })
             .run();
-
-        // Debugging: log the command being executed
-        ffmpegCommand
-            .on('start', (commandLine) => {
-                console.log('FFmpeg command:', commandLine);
-            })
-            .on('stderr', (stderrLine) => {
-                console.error('FFmpeg stderr:', stderrLine);
-            });
     });
 };
