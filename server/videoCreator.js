@@ -1,41 +1,86 @@
-import Jimp from 'jimp';
-import { exec } from 'child_process';
+import ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
+import fs from 'fs';
+import fetch from 'node-fetch';
+import ffmpegPath from 'ffmpeg-static';
 import { fileURLToPath } from 'url';
-import fs from 'fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export async function createReel(images, voiceOverPath, duration) {
-    const outputFilePath = path.join(__dirname, '../output/reel.mp4');
-    try {
-        // Assume images is an array of URLs
-        const imageFiles = await Promise.all(images.map(async (imageUrl, index) => {
-            const image = await Jimp.read(imageUrl);
-            const resizedImage = image.resize(1080, 720);
-            const imagePath = path.join(__dirname, `../uploads/image${index + 1}.jpg`);
-            await resizedImage.writeAsync(imagePath);
-            return imagePath;
-        }));
+ffmpeg.setFfmpegPath(ffmpegPath);
 
-        const ffmpegCommand = `ffmpeg -t ${duration} -i ${imageFiles[0]} -i ${voiceOverPath} -y -c:v libx264 -c:a aac -pix_fmt yuv420p -shortest -movflags +faststart ${outputFilePath}`;
-        
-        await executeCommand(ffmpegCommand);
-        console.log(`Reel video successfully created: ${outputFilePath}`);
-    } catch (error) {
-        console.error("Error creating reel:", error);
+async function createReel(images, userImagePath, voiceOver, duration) {
+    const outputDir = path.join(__dirname, '../output');
+    const outputPath = path.join(outputDir, 'reel.mp4');
+
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+        console.log('Output directory created:', outputDir);
     }
-}
 
-async function executeCommand(command) {
-    return new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(stdout);
+    const tempImageFiles = images.map((_, index) => {
+        return path.join(__dirname, '../uploads', `image${index}.jpg`);
+    });
+
+    // Add user image at the beginning of the image array
+    const allImages = [userImagePath, ...images];
+
+    // Download related images to local filesystem
+    await Promise.all(images.map(async (imageUrl, index) => {
+        try {
+            const response = await fetch(imageUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to download image: ${response.statusText}`);
             }
+            const buffer = await response.buffer();
+            fs.writeFileSync(tempImageFiles[index], buffer);
+        } catch (error) {
+            console.error(`Error downloading image ${index}:`, error);
+            throw error;
+        }
+    }));
+
+    return new Promise((resolve, reject) => {
+        const command = ffmpeg();
+
+        // Add the user-uploaded image first
+        command.input(userImagePath).inputOptions([`-t ${duration / allImages.length}`]);
+
+        // Add the related images next
+        tempImageFiles.forEach((file, index) => {
+            command.input(file).inputOptions([`-t ${duration / allImages.length}`]);
         });
+
+        // Add the voiceover as an audio track
+        if (fs.existsSync(voiceOver)) {
+            command.input(voiceOver);
+        } else {
+            console.error('Voiceover file not found.');
+            reject(new Error('Voiceover file not found.'));
+        }
+
+        command.outputOptions([
+            '-r 30', // 30 FPS
+            '-c:v libx264',
+            '-c:a aac',
+            '-pix_fmt yuv420p',
+            '-shortest',
+            '-movflags +faststart'
+        ])
+        .output(outputPath)
+        .on('end', () => {
+            console.log('Video successfully created:', outputPath);
+            tempImageFiles.forEach(file => fs.unlinkSync(file));
+            resolve(outputPath);
+        })
+        .on('error', (err) => {
+            console.error('Error creating reel:', err.message);
+            tempImageFiles.forEach(file => fs.unlinkSync(file));
+            reject(err);
+        })
+        .run();
     });
 }
+
+export { createReel };
