@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-async function createReel(images, userImagePath, voiceOver, duration) {
+export async function createReel(images, userImagePath, voiceOver, duration) {
     const outputDir = path.join(__dirname, '../output');
     const outputPath = path.join(outputDir, 'reel.mp4');
 
@@ -82,5 +82,3 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         .run();
     });
 }
-
-export { createReel };
