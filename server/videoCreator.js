@@ -69,6 +69,9 @@ async function createReel(images, userImagePath, voiceOver, duration) {
             reject(new Error('Voiceover file not found.'));
         }
 
+        // Log the FFmpeg command
+        console.log('FFmpeg command:', command);
+
         command.outputOptions([
             '-r 30', // 30 FPS
             '-c:v libx264',
@@ -88,6 +91,9 @@ async function createReel(images, userImagePath, voiceOver, duration) {
             console.error('FFmpeg error details:', err); // Log error details
             tempImageFiles.forEach(file => fs.unlinkSync(file));
             reject(err);
+        })
+        .on('stderr', (stderrLine) => {
+            console.log('FFmpeg stderr:', stderrLine); // Log FFmpeg stderr output
         })
         .run();
     });
