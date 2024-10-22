@@ -2,9 +2,8 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegPath from 'ffmpeg-static';  // Import ffmpeg-static
+import ffmpegPath from 'ffmpeg-static';
 
-// Set the FFmpeg path
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const downloadImage = async (url, dest) => {
@@ -19,6 +18,12 @@ const downloadImage = async (url, dest) => {
 
 export const createReel = async (relatedImages, userImagePath, voiceOverPath, duration) => {
     const imagesDir = path.join(process.cwd(), 'uploads');
+    const outputDir = path.join(process.cwd(), 'output'); // Define output directory
+
+    // Ensure the output directory exists
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true }); // Create output directory
+    }
 
     const downloadedImages = await Promise.all(
         relatedImages.map(async (imageUrl, index) => {
@@ -35,7 +40,7 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
 
     downloadedImages.unshift(userImagePath);
 
-    const outputReelPath = path.join(process.cwd(), 'output', 'reel.mp4');
+    const outputReelPath = path.join(outputDir, 'reel.mp4'); // Use output directory
 
     return new Promise((resolve, reject) => {
         const ffmpegCommand = ffmpeg();
