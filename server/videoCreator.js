@@ -1,62 +1,110 @@
-import ffmpeg from '@ffmpeg/ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
+import fs from 'fs';
+import fetch from 'node-fetch';
+import ffmpegPath from 'ffmpeg-static';
+import { fileURLToPath } from 'url';
 
-const { createFFmpeg, fetchFile } = ffmpeg;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const ffmpegInstance = createFFmpeg({ log: true });
+ffmpeg.setFfmpegPath(ffmpegPath);
 
-export const createReel = async (relatedImages, userImagePath, voiceOverPath, duration) => {
-    const outputPath = path.join(process.cwd(), 'output', 'reel.mp4');
-
-    // Load FFmpeg core
-    if (!ffmpegInstance.isLoaded()) {
-        await ffmpegInstance.load();
-    }
-
-    // Log the input files
-    console.log('Input files:');
-    console.log(`User Image: ${userImagePath}`);
-    console.log(`Voice Over: ${voiceOverPath}`);
-    console.log('Related Images:', relatedImages);
-
+async function downloadImage(imageUrl, outputPath) {
     try {
-        // Prepare files for FFmpeg
-        ffmpegInstance.FS('writeFile', 'userImage.jpg', await fetchFile(userImagePath));
-        ffmpegInstance.FS('writeFile', 'voiceover.mp3', await fetchFile(voiceOverPath));
-
-        // Write related images to FFmpeg FS
-        for (let i = 0; i < relatedImages.length; i++) {
-            const imageUrl = relatedImages[i];
-            const fileName = `image${i}.jpg`;
-            ffmpegInstance.FS('writeFile', fileName, await fetchFile(imageUrl));
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image from ${imageUrl}, status: ${response.status}`);
         }
-
-        // Construct FFmpeg command
-        const inputs = relatedImages.map((_, i) => `image${i}.jpg`).join(' ');
-
-        await ffmpegInstance.run(
-            '-framerate', '1/5', // 1 frame every 5 seconds
-            '-i', `image%d.jpg`, // Input images
-            '-i', 'userImage.jpg', // User image
-            '-i', 'voiceover.mp3', // Voiceover
-            '-c:v', 'libx264',
-            '-t', duration, // Set the duration
-            '-pix_fmt', 'yuv420p', // Ensure compatibility
-            outputPath // Output file
-        );
-
-        // Read output
-        await ffmpegInstance.FS('rename', 'output.mp4', path.basename(outputPath));
-
-        console.log('Reel video created successfully!');
-        return outputPath;
+        const buffer = await response.buffer();
+        fs.writeFileSync(outputPath, buffer);
+        console.log(`Downloaded image: ${outputPath}`);
     } catch (error) {
-        console.error('Error creating reel video:', error);
-        throw new Error(`Error creating reel video: ${error.message}`);
-    } finally {
-        // Clean up the FS
-        ffmpegInstance.FS('unlink', 'userImage.jpg');
-        ffmpegInstance.FS('unlink', 'voiceover.mp3');
-        relatedImages.forEach((_, i) => ffmpegInstance.FS('unlink', `image${i}.jpg`));
+        console.error(`Error downloading image from ${imageUrl}:`, error);
+        throw error;
     }
-};
+}
+
+async function createReel(images, userImagePath, voiceOverPath, duration) {
+    const outputDir = path.join(__dirname, '../output');
+    const outputPath = path.join(outputDir, 'reel.mp4');
+
+    // Ensure the output directory exists
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // Define temporary paths for images to be downloaded
+    const tempImageFiles = images.map((_, index) => {
+        return path.join(__dirname, '../uploads', `image${index}.jpg`);
+    });
+
+    // Add the user-uploaded image as the first in the array of images
+    const allImages = [userImagePath, ...tempImageFiles];
+
+    // Log image paths
+    console.log('User Image Path:', userImagePath);
+    allImages.forEach((img, index) => console.log(`Image ${index} path: ${img}`));
+
+    // Download related images from URLs
+    await Promise.all(images.map(async (imageUrl, index) => {
+        const outputFilePath = tempImageFiles[index];
+        await downloadImage(imageUrl, outputFilePath);
+    }));
+
+    // Ensure the voiceover file exists
+    if (!fs.existsSync(voiceOverPath)) {
+        console.error('Voiceover file not found:', voiceOverPath);
+        throw new Error('Voiceover file not found.');
+    }
+    
+    // Log the voiceover file path
+    console.log('Voiceover Path:', voiceOverPath);
+
+    // Check file sizes for debugging
+    allImages.forEach((img, index) => {
+        console.log(`Image ${index} size: ${fs.statSync(img).size} bytes`);
+    });
+    console.log(`Voiceover size: ${fs.statSync(voiceOverPath).size} bytes`);
+
+    // FFmpeg reel creation
+    return new Promise((resolve, reject) => {
+        const command = ffmpeg();
+
+        // Add all images as inputs
+        allImages.forEach((file, index) => {
+            command.input(file).inputOptions([`-t ${duration / allImages.length}`]);
+        });
+
+        // Add voiceover as audio input
+        command.input(voiceOverPath);
+
+        // Set output options for video encoding
+        command
+            .outputOptions([
+                '-r 30', // 30 FPS
+                '-c:v libx264', // Video codec
+                '-c:a aac', // Audio codec
+                '-pix_fmt yuv420p', // Pixel format
+                '-shortest', // Shorten the video to match the length of the shortest input (voiceover)
+                '-movflags +faststart', // Optimize for web playback
+            ])
+            .output(outputPath) // Set the output file
+            .on('start', (cmdline) => {
+                console.log('FFmpeg command started:', cmdline);  // Log FFmpeg command
+            })
+            .on('end', () => {
+                console.log('Reel video successfully created:', outputPath);
+                tempImageFiles.forEach(file => fs.unlinkSync(file)); // Clean up temp image files
+                resolve(outputPath);
+            })
+            .on('error', (err) => {
+                console.error('Error creating reel video:', err.message); // Log specific FFmpeg error message
+                tempImageFiles.forEach(file => fs.unlinkSync(file)); // Clean up on error
+                reject(err);
+            })
+            .run(); // Start FFmpeg processing
+    });
+}
+
+export { createReel };
