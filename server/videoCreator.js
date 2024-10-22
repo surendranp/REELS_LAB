@@ -34,9 +34,6 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // Log the FFmpeg path to ensure it's set correctly
-    console.log('FFmpeg path:', ffmpegPath);
-
     // Define temporary paths for images to be downloaded
     const tempImageFiles = images.map((_, index) => {
         return path.join(__dirname, '../uploads', `image${index}.jpg`);
@@ -45,7 +42,7 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
     // Add the user-uploaded image as the first in the array of images
     const allImages = [userImagePath, ...tempImageFiles];
 
-    // Debug: Log image paths
+    // Log image paths
     console.log('User Image Path:', userImagePath);
     allImages.forEach((img, index) => console.log(`Image ${index} path: ${img}`));
 
@@ -70,19 +67,17 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
     });
     console.log(`Voiceover size: ${fs.statSync(voiceOverPath).size} bytes`);
 
+    // FFmpeg reel creation
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
-        // Add the user-uploaded image first
-        command.input(userImagePath).inputOptions([`-t ${duration / allImages.length}`]);
-
-        // Add related images as inputs
-        tempImageFiles.forEach((file, index) => {
+        // Add all images as inputs
+        allImages.forEach((file, index) => {
             command.input(file).inputOptions([`-t ${duration / allImages.length}`]);
         });
 
         // Add voiceover as audio input
-        command.input(voiceOverPath); 
+        command.input(voiceOverPath);
 
         // Set output options for video encoding
         command
