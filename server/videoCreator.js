@@ -4,7 +4,7 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import ffmpegPath from 'ffmpeg-static';
 import { fileURLToPath } from 'url';
-const Jimp = require('jimp'); // CommonJS import
+import Jimp from 'jimp/es'; // Importing from the 'es' entry point of Jimp
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
