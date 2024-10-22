@@ -64,11 +64,11 @@ async function createReel(images, voiceOverPath, duration) {
         const command = ffmpeg();
 
         // Add the user-uploaded image first
-        command.input(images[0]);
+        command.input(images[0]).inputOptions('-t', `${duration}`); // Set duration for the first image
 
-        // Add related images as inputs
+        // Add related images as inputs with duration
         tempImageFiles.forEach(file => {
-            command.input(file);
+            command.input(file).inputOptions('-t', `${duration}`); // Set duration for each image
         });
 
         // Add voiceover as audio input
@@ -77,10 +77,6 @@ async function createReel(images, voiceOverPath, duration) {
         // Set output options for video encoding
         command
             .outputOptions([
-                '-filter_complex', 
-                // Create a complex filter to scale images
-                `concat=n=${tempImageFiles.length + 1}:v=1:a=0,scale=iw-mod(iw,2):ih-mod(ih,2)`, // Adjust this filter
-                '-r 30', // 30 FPS
                 '-c:v libx264', // Video codec
                 '-c:a aac', // Audio codec
                 '-pix_fmt yuv420p', // Pixel format
@@ -109,4 +105,5 @@ async function createReel(images, voiceOverPath, duration) {
             .run(); // Start FFmpeg processing
     });
 }
+
 export { createReel };
