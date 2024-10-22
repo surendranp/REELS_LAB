@@ -19,6 +19,9 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
+    // Log the FFmpeg path to ensure it's set correctly
+    console.log('FFmpeg path:', ffmpegPath);
+
     // Define temporary paths for images to be downloaded
     const tempImageFiles = images.map((_, index) => {
         return path.join(__dirname, '../uploads', `image${index}.jpg`);
@@ -26,6 +29,10 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
 
     // Add the user-uploaded image as the first in the array of images
     const allImages = [userImagePath, ...images];
+
+    // Debug: Log image paths
+    console.log('User Image Path:', userImagePath);
+    allImages.forEach((img, index) => console.log(`Image ${index} path: ${img}`));
 
     // Download related images from URLs
     await Promise.all(images.map(async (imageUrl, index) => {
@@ -39,6 +46,21 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
         }
     }));
 
+    // Ensure the voiceover file exists
+    if (!fs.existsSync(voiceOverPath)) {
+        console.error('Voiceover file not found:', voiceOverPath);
+        throw new Error('Voiceover file not found.');
+    }
+    
+    // Log the voiceover file path
+    console.log('Voiceover Path:', voiceOverPath);
+
+    // Check file sizes for debugging
+    allImages.forEach((img, index) => {
+        console.log(`Image ${index} size: ${fs.statSync(img).size} bytes`);
+    });
+    console.log(`Voiceover size: ${fs.statSync(voiceOverPath).size} bytes`);
+
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
@@ -50,14 +72,8 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
             command.input(file).inputOptions([`-t ${duration / allImages.length}`]);
         });
 
-        // Check if the voiceover file exists
-        if (fs.existsSync(voiceOverPath)) {
-            command.input(voiceOverPath); // Add the voiceover audio input
-        } else {
-            console.error('Voiceover file not found:', voiceOverPath);
-            reject(new Error('Voiceover file not found.'));
-            return;
-        }
+        // Add voiceover as audio input
+        command.input(voiceOverPath); 
 
         // Set output options for video encoding
         command
@@ -70,13 +86,16 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
                 '-movflags +faststart', // Optimize for web playback
             ])
             .output(outputPath) // Set the output file
+            .on('start', (cmdline) => {
+                console.log('FFmpeg command started:', cmdline);  // Log FFmpeg command
+            })
             .on('end', () => {
                 console.log('Reel video successfully created:', outputPath);
                 tempImageFiles.forEach(file => fs.unlinkSync(file)); // Clean up temp image files
                 resolve(outputPath);
             })
             .on('error', (err) => {
-                console.error('Error creating reel video:', err);
+                console.error('Error creating reel video:', err.message); // Log specific FFmpeg error message
                 tempImageFiles.forEach(file => fs.unlinkSync(file)); // Clean up on error
                 reject(err);
             })
