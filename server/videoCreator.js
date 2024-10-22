@@ -18,11 +18,11 @@ const downloadImage = async (url, dest) => {
 
 export const createReel = async (relatedImages, userImagePath, voiceOverPath, duration) => {
     const imagesDir = path.join(process.cwd(), 'uploads');
-    const outputDir = path.join(process.cwd(), 'output'); // Define output directory
+    const outputDir = path.join(process.cwd(), 'output');
 
     // Ensure the output directory exists
     if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true }); // Create output directory
+        fs.mkdirSync(outputDir, { recursive: true });
     }
 
     const downloadedImages = await Promise.all(
@@ -40,17 +40,23 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
 
     downloadedImages.unshift(userImagePath);
 
-    const outputReelPath = path.join(outputDir, 'reel.mp4'); // Use output directory
+    // Log downloaded images
+    console.log('Downloaded Images:', downloadedImages);
+
+    const outputReelPath = path.join(outputDir, 'reel.mp4');
 
     return new Promise((resolve, reject) => {
         const ffmpegCommand = ffmpeg();
 
         downloadedImages.forEach((imagePath) => {
+            console.log(`Adding image to FFmpeg command: ${imagePath}`);
             ffmpegCommand.input(imagePath).inputOptions([`-t ${duration / downloadedImages.length}`]);
         });
 
         ffmpegCommand.input(voiceOverPath);
+        console.log(`Voiceover path: ${voiceOverPath}`);
 
+        // Log the full command for debugging
         ffmpegCommand
             .outputOptions([
                 '-y',
@@ -71,5 +77,14 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
                 reject(err);
             })
             .run();
+
+        // Debugging: log the command being executed
+        ffmpegCommand
+            .on('start', (commandLine) => {
+                console.log('FFmpeg command:', commandLine);
+            })
+            .on('stderr', (stderrLine) => {
+                console.error('FFmpeg stderr:', stderrLine);
+            });
     });
 };
