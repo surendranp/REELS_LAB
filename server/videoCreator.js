@@ -34,7 +34,6 @@ async function createReel(images, voiceOverPath, duration) {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // Log the FFmpeg path to ensure it's set correctly
     console.log('FFmpeg path:', ffmpegPath);
 
     // Download related images from URLs
@@ -49,28 +48,14 @@ async function createReel(images, voiceOverPath, duration) {
         }
     }));
 
-    // Add the user-uploaded image as the first in the array of images
-    const allImages = [images[0], ...tempImageFiles];
-
     // Ensure the voiceover file exists
     if (!fs.existsSync(voiceOverPath)) {
         console.error('Voiceover file not found:', voiceOverPath);
         throw new Error('Voiceover file not found.');
     }
 
-    // Log input files for debugging
-    console.log('Input files for FFmpeg:');
-    allImages.forEach((img, index) => {
-        if (fs.existsSync(img)) {
-            console.log(`Image ${index}: ${img}`);
-        } else {
-            console.warn(`Image ${index} does not exist: ${img}`);
-        }
-    });
-    console.log(`Voiceover Path: ${voiceOverPath}`);
-
     // Check if all images exist before running FFmpeg
-    const allFilesExist = allImages.every(file => fs.existsSync(file));
+    const allFilesExist = [images[0], ...tempImageFiles].every(file => fs.existsSync(file));
     if (!allFilesExist) {
         throw new Error('One or more input files do not exist. Cannot proceed with FFmpeg.');
     }
@@ -79,11 +64,13 @@ async function createReel(images, voiceOverPath, duration) {
         const command = ffmpeg();
 
         // Add the user-uploaded image first
-        command.input(images[0]).inputOptions([`-t ${duration / allImages.length}`]);
+        command.input(images[0]).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
 
-        // Add related images as inputs
-        tempImageFiles.forEach((file) => {
-            command.input(file).inputOptions([`-t ${duration / allImages.length}`]);
+        // Add related images as inputs and scale them to be divisible by 2
+        tempImageFiles.forEach((file, index) => {
+            command.input(file)
+                .inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`])
+                .videoFilters(`scale=iw-mod(iw,2):ih-mod(ih,2)`); // Ensuring width and height are even
         });
 
         // Add voiceover as audio input
@@ -121,5 +108,4 @@ async function createReel(images, voiceOverPath, duration) {
             .run(); // Start FFmpeg processing
     });
 }
-
 export { createReel };
