@@ -42,36 +42,37 @@ async function createReel(images, voiceOverPath, duration) {
     // Log the FFmpeg path to ensure it's set correctly
     console.log('FFmpeg path:', ffmpegPath);
 
-    // Define temporary paths for images to be downloaded
-    const tempImageFiles = images.map((_, index) => {
-        return path.join(__dirname, '../uploads', `image${index}.jpg`);
-    });
+    // Download related images from URLs
+    const tempImageFiles = []; // Initialize empty array for temp files
+    await Promise.all(images.slice(1).map(async (imageUrl, index) => {
+        const outputFilePath = path.join(__dirname, '../uploads', `image${index}.jpg`);
+        try {
+            await downloadImage(imageUrl, outputFilePath);
+            tempImageFiles.push(outputFilePath); // Add path to array only if download is successful
+        } catch (error) {
+            console.error(`Failed to download image ${imageUrl}:`, error);
+        }
+    }));
 
     // Add the user-uploaded image as the first in the array of images
     const allImages = [images[0], ...tempImageFiles];
-
-    // Debug: Log image paths
-    console.log('User Image Path:', images[0]);
-    allImages.forEach((img, index) => console.log(`Image ${index} path: ${img}`));
-
-    // Download related images from URLs
-    await Promise.all(images.slice(1).map(async (imageUrl, index) => {
-        const outputFilePath = tempImageFiles[index];
-        await downloadImage(imageUrl, outputFilePath);
-    }));
 
     // Ensure the voiceover file exists
     if (!fs.existsSync(voiceOverPath)) {
         console.error('Voiceover file not found:', voiceOverPath);
         throw new Error('Voiceover file not found.');
     }
-    
+
     // Log the voiceover file path
     console.log('Voiceover Path:', voiceOverPath);
 
     // Check file sizes for debugging
     allImages.forEach((img, index) => {
-        console.log(`Image ${index} size: ${fs.statSync(img).size} bytes`);
+        if (fs.existsSync(img)) { // Check if the file exists
+            console.log(`Image ${index} size: ${fs.statSync(img).size} bytes`);
+        } else {
+            console.warn(`Image ${index} does not exist: ${img}`);
+        }
     });
     console.log(`Voiceover size: ${fs.statSync(voiceOverPath).size} bytes`);
 
@@ -82,12 +83,12 @@ async function createReel(images, voiceOverPath, duration) {
         command.input(images[0]).inputOptions([`-t ${duration / allImages.length}`]);
 
         // Add related images as inputs
-        tempImageFiles.forEach((file, index) => {
+        tempImageFiles.forEach((file) => {
             command.input(file).inputOptions([`-t ${duration / allImages.length}`]);
         });
 
         // Add voiceover as audio input
-        command.input(voiceOverPath); 
+        command.input(voiceOverPath);
 
         // Set output options for video encoding
         command
