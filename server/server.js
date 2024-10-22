@@ -15,29 +15,25 @@ app.use('/output', express.static(path.join(process.cwd(), 'output')));
 app.use(express.static(path.join(process.cwd(), 'public')));
 
 app.post('/generate-reel', upload.single('image'), async (req, res) => {
-    console.log('Request body:', req.body);
-    console.log('Uploaded file:', req.file);
-
     const { description, duration } = req.body;
-    const userImagePath = req.file.path;  // User-uploaded image
+    const userImagePath = req.file.path;  // Path of the user-uploaded image
 
     try {
-        const query = description.split(' ')[0];
-        console.log('Query for related images:', query);
+        const query = description.split(' ')[0];  // Extract the query from the description
 
+        // Generate related images using the Unsplash API
         const relatedImages = await generateRelatedImages(query);
-        console.log('Related images:', relatedImages);
 
-        const voiceOver = await generateVoiceOver(description);
-        console.log('Voiceover saved at:', voiceOver);
+        // Generate the voiceover using the Eleven Labs API
+        const voiceOverPath = await generateVoiceOver(description);
 
-        const reel = await createReel(relatedImages, userImagePath, voiceOver, duration);
-        console.log('Reel created at:', reel);
+        // Create the reel video with the images and voiceover
+        const reelPath = await createReel(relatedImages, userImagePath, voiceOverPath, duration);
 
-        res.json({ message: 'Reel generated!', reel: `/output/${path.basename(reel)}` });
+        res.json({ message: 'Reel successfully generated!', reelUrl: `/output/${path.basename(reelPath)}` });
     } catch (error) {
-        console.error('Error in /generate-reel route:', error);
-        res.status(500).json({ message: error.message || 'Error generating reel.' });
+        console.error('Error generating reel:', error);
+        res.status(500).json({ message: 'Error generating reel', error: error.message });
     }
 });
 
@@ -47,5 +43,5 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
