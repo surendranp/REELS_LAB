@@ -3,6 +3,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
 
+// Function to download image from a URL and save it locally
 const downloadImage = async (url, dest) => {
     const response = await fetch(url);
     if (!response.ok) {
@@ -15,8 +16,8 @@ const downloadImage = async (url, dest) => {
 
 export const createReel = async (relatedImages, userImagePath, voiceOverPath, duration) => {
     const imagesDir = path.join(process.cwd(), 'uploads');
-    
-    // Download related Unsplash images
+
+    // Download Unsplash images (only for valid URLs)
     const downloadedImages = await Promise.all(
         relatedImages.map(async (imageUrl, index) => {
             const imageFilePath = path.join(imagesDir, `image${index}.jpg`);
@@ -24,32 +25,38 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
                 console.log(`Downloading image: ${imageUrl}`);
                 return await downloadImage(imageUrl, imageFilePath);
             } else {
-                // If it's a local file path (user uploaded image), return the path directly
                 console.log(`Using local image: ${imageUrl}`);
-                return imageUrl;
+                return imageUrl;  // Use local file path for user-uploaded image
             }
         })
     );
 
-    // Add the user-uploaded image to the beginning of the array
+    // Add the user-uploaded image to the front of the images array
     downloadedImages.unshift(userImagePath);
 
     const outputReelPath = path.join(process.cwd(), 'output', 'reel.mp4');
 
     return new Promise((resolve, reject) => {
-        const ffmpegCommand = ffmpeg()
-            .input(downloadedImages[0]).inputOptions([`-t ${duration / downloadedImages.length}`])
-            .input(downloadedImages[1]).inputOptions([`-t ${duration / downloadedImages.length}`])
-            .input(downloadedImages[2]).inputOptions([`-t ${duration / downloadedImages.length}`])
-            .input(voiceOverPath)
+        const ffmpegCommand = ffmpeg();
+
+        // Input each image file with a duration
+        downloadedImages.forEach((imagePath) => {
+            ffmpegCommand.input(imagePath).inputOptions([`-t ${duration / downloadedImages.length}`]);
+        });
+
+        // Add the voiceover audio
+        ffmpegCommand.input(voiceOverPath);
+
+        // FFmpeg options and output file
+        ffmpegCommand
             .outputOptions([
-                '-y', // Overwrite the output file if it exists
-                '-r 30', // Set frame rate to 30 fps
-                '-c:v libx264', // Video codec
-                '-c:a aac', // Audio codec
-                '-pix_fmt yuv420p', // Pixel format for video compatibility
-                '-shortest', // Stop when the shortest input stream ends
-                '-movflags +faststart' // Optimizes video for web streaming
+                '-y',  // Overwrite the output file if it exists
+                '-r 30',  // Set frame rate to 30 fps
+                '-c:v libx264',  // Video codec
+                '-c:a aac',  // Audio codec
+                '-pix_fmt yuv420p',  // Pixel format for video compatibility
+                '-shortest',  // Stop when the shortest input stream ends
+                '-movflags +faststart'  // Optimize video for web streaming
             ])
             .output(outputReelPath)
             .on('end', () => {
