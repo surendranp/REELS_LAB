@@ -63,12 +63,12 @@ async function createReel(images, voiceOverPath, duration) {
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
-        // Add the user-uploaded image first
-        command.input(images[0]).inputOptions('-t', `${duration}`); // Set duration for the first image
+        // Add the user-uploaded image first with duration
+        command.input(images[0]).inputOptions(`-t ${duration}`); 
 
         // Add related images as inputs with duration
         tempImageFiles.forEach(file => {
-            command.input(file).inputOptions('-t', `${duration}`); // Set duration for each image
+            command.input(file).inputOptions(`-t ${duration}`); // Set duration for each image
         });
 
         // Add voiceover as audio input
