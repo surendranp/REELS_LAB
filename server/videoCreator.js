@@ -70,7 +70,7 @@ async function createReel(images, voiceOverPath, duration) {
         tempImageFiles.forEach((file, index) => {
             command.input(file)
                 .inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`])
-                .videoFilters(`scale=iw-mod(iw,2):ih-mod(ih,2)`); // Ensuring width and height are even
+                .videoFilters(`scale=iw-mod(iw,2):ih-mod(ih,2)`); // Fixed filter syntax here
         });
 
         // Add voiceover as audio input
