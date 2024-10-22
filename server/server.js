@@ -19,11 +19,6 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
     const userImagePath = req.file.path;  // Path of the user-uploaded image
 
     try {
-        // Check if description and duration are provided
-        if (!description || !duration) {
-            return res.status(400).json({ message: 'Description and duration are required.' });
-        }
-
         const query = description.split(' ')[0];  // Extract the query from the description
 
         // Generate related images using the Unsplash API
@@ -35,11 +30,7 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
         // Create the reel video with the images and voiceover
         const reelPath = await createReel(relatedImages, userImagePath, voiceOverPath, duration);
 
-        // Construct the URL for the generated reel
-        const reelUrl = `/output/${path.basename(reelPath)}`;
-        console.log("Reel URL:", reelUrl);  // Log the constructed URL for debugging
-
-        res.json({ message: 'Reel successfully generated!', reelUrl });
+        res.json({ message: 'Reel successfully generated!', reelUrl: `/output/${path.basename(reelPath)}` });
     } catch (error) {
         console.error('Error generating reel:', error);
         res.status(500).json({ message: 'Error generating reel', error: error.message });
