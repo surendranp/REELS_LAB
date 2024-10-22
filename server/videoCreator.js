@@ -2,8 +2,11 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from 'ffmpeg-static';  // Import ffmpeg-static
 
-// Function to download image from a URL and save it locally
+// Set the FFmpeg path
+ffmpeg.setFfmpegPath(ffmpegPath);
+
 const downloadImage = async (url, dest) => {
     const response = await fetch(url);
     if (!response.ok) {
@@ -17,11 +20,10 @@ const downloadImage = async (url, dest) => {
 export const createReel = async (relatedImages, userImagePath, voiceOverPath, duration) => {
     const imagesDir = path.join(process.cwd(), 'uploads');
 
-    // Download Unsplash images (only for valid URLs)
     const downloadedImages = await Promise.all(
         relatedImages.map(async (imageUrl, index) => {
             const imageFilePath = path.join(imagesDir, `image${index}.jpg`);
-            if (imageUrl.startsWith('http')) {  // Only fetch if it's a URL
+            if (imageUrl.startsWith('http')) {
                 console.log(`Downloading image: ${imageUrl}`);
                 return await downloadImage(imageUrl, imageFilePath);
             } else {
@@ -31,7 +33,6 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
         })
     );
 
-    // Add the user-uploaded image to the front of the images array
     downloadedImages.unshift(userImagePath);
 
     const outputReelPath = path.join(process.cwd(), 'output', 'reel.mp4');
@@ -39,24 +40,21 @@ export const createReel = async (relatedImages, userImagePath, voiceOverPath, du
     return new Promise((resolve, reject) => {
         const ffmpegCommand = ffmpeg();
 
-        // Input each image file with a duration
         downloadedImages.forEach((imagePath) => {
             ffmpegCommand.input(imagePath).inputOptions([`-t ${duration / downloadedImages.length}`]);
         });
 
-        // Add the voiceover audio
         ffmpegCommand.input(voiceOverPath);
 
-        // FFmpeg options and output file
         ffmpegCommand
             .outputOptions([
-                '-y',  // Overwrite the output file if it exists
-                '-r 30',  // Set frame rate to 30 fps
-                '-c:v libx264',  // Video codec
-                '-c:a aac',  // Audio codec
-                '-pix_fmt yuv420p',  // Pixel format for video compatibility
-                '-shortest',  // Stop when the shortest input stream ends
-                '-movflags +faststart'  // Optimize video for web streaming
+                '-y',
+                '-r 30',
+                '-c:v libx264',
+                '-c:a aac',
+                '-pix_fmt yuv420p',
+                '-shortest',
+                '-movflags +faststart'
             ])
             .output(outputReelPath)
             .on('end', () => {
