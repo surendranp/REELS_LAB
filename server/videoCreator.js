@@ -12,6 +12,11 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 async function downloadImage(imageUrl, outputPath) {
     try {
+        // Check if the URL is absolute
+        if (!/^https?:\/\//i.test(imageUrl)) {
+            throw new Error(`Invalid URL: ${imageUrl}`);
+        }
+
         const response = await fetch(imageUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch image from ${imageUrl}, status: ${response.status}`);
@@ -25,7 +30,7 @@ async function downloadImage(imageUrl, outputPath) {
     }
 }
 
-async function createReel(images, userImagePath, voiceOverPath, duration) {
+async function createReel(images, voiceOverPath, duration) {
     const outputDir = path.join(__dirname, '../output');
     const outputPath = path.join(outputDir, 'reel.mp4');
 
@@ -43,14 +48,14 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
     });
 
     // Add the user-uploaded image as the first in the array of images
-    const allImages = [userImagePath, ...tempImageFiles];
+    const allImages = [images[0], ...tempImageFiles];
 
     // Debug: Log image paths
-    console.log('User Image Path:', userImagePath);
+    console.log('User Image Path:', images[0]);
     allImages.forEach((img, index) => console.log(`Image ${index} path: ${img}`));
 
     // Download related images from URLs
-    await Promise.all(images.map(async (imageUrl, index) => {
+    await Promise.all(images.slice(1).map(async (imageUrl, index) => {
         const outputFilePath = tempImageFiles[index];
         await downloadImage(imageUrl, outputFilePath);
     }));
@@ -74,7 +79,7 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
         const command = ffmpeg();
 
         // Add the user-uploaded image first
-        command.input(userImagePath).inputOptions([`-t ${duration / allImages.length}`]);
+        command.input(images[0]).inputOptions([`-t ${duration / allImages.length}`]);
 
         // Add related images as inputs
         tempImageFiles.forEach((file, index) => {

@@ -38,6 +38,8 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
 
         // Generate related images using the Unsplash API
         const relatedImages = await generateRelatedImages(query);
+        console.log('Related Images:', relatedImages); // Log the related image URLs
+
         if (relatedImages.length === 0) {
             throw new Error('No related images found.');
         }
