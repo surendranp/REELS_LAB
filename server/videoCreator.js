@@ -43,12 +43,12 @@ async function createReel(images, voiceOverPath, duration) {
     console.log('FFmpeg path:', ffmpegPath);
 
     // Download related images from URLs
-    const tempImageFiles = []; // Initialize empty array for temp files
+    const tempImageFiles = [];
     await Promise.all(images.slice(1).map(async (imageUrl, index) => {
         const outputFilePath = path.join(__dirname, '../uploads', `image${index}.jpg`);
         try {
             await downloadImage(imageUrl, outputFilePath);
-            tempImageFiles.push(outputFilePath); // Add path to array only if download is successful
+            tempImageFiles.push(outputFilePath);
         } catch (error) {
             console.error(`Failed to download image ${imageUrl}:`, error);
         }
@@ -63,18 +63,16 @@ async function createReel(images, voiceOverPath, duration) {
         throw new Error('Voiceover file not found.');
     }
 
-    // Log the voiceover file path
-    console.log('Voiceover Path:', voiceOverPath);
-
-    // Check file sizes for debugging
+    // Log input files for debugging
+    console.log('Input files for FFmpeg:');
     allImages.forEach((img, index) => {
-        if (fs.existsSync(img)) { // Check if the file exists
-            console.log(`Image ${index} size: ${fs.statSync(img).size} bytes`);
+        if (fs.existsSync(img)) {
+            console.log(`Image ${index}: ${img}`);
         } else {
             console.warn(`Image ${index} does not exist: ${img}`);
         }
     });
-    console.log(`Voiceover size: ${fs.statSync(voiceOverPath).size} bytes`);
+    console.log(`Voiceover Path: ${voiceOverPath}`);
 
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
@@ -103,6 +101,9 @@ async function createReel(images, voiceOverPath, duration) {
             .output(outputPath) // Set the output file
             .on('start', (cmdline) => {
                 console.log('FFmpeg command started:', cmdline);  // Log FFmpeg command
+            })
+            .on('progress', (progress) => {
+                console.log(`Processing: ${progress.percent}% done`); // Log progress
             })
             .on('end', () => {
                 console.log('Reel video successfully created:', outputPath);
