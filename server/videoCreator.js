@@ -10,6 +10,21 @@ const __dirname = path.dirname(__filename);
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+async function downloadImage(imageUrl, outputPath) {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image from ${imageUrl}, status: ${response.status}`);
+        }
+        const buffer = await response.buffer();
+        fs.writeFileSync(outputPath, buffer);
+        console.log(`Downloaded image: ${outputPath}`);
+    } catch (error) {
+        console.error(`Error downloading image from ${imageUrl}:`, error);
+        throw error;
+    }
+}
+
 async function createReel(images, userImagePath, voiceOverPath, duration) {
     const outputDir = path.join(__dirname, '../output');
     const outputPath = path.join(outputDir, 'reel.mp4');
@@ -28,7 +43,7 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
     });
 
     // Add the user-uploaded image as the first in the array of images
-    const allImages = [userImagePath, ...images];
+    const allImages = [userImagePath, ...tempImageFiles];
 
     // Debug: Log image paths
     console.log('User Image Path:', userImagePath);
@@ -36,14 +51,8 @@ async function createReel(images, userImagePath, voiceOverPath, duration) {
 
     // Download related images from URLs
     await Promise.all(images.map(async (imageUrl, index) => {
-        try {
-            const response = await fetch(imageUrl);
-            const buffer = await response.buffer();
-            fs.writeFileSync(tempImageFiles[index], buffer);
-        } catch (error) {
-            console.error(`Failed to download image ${index}: ${error}`);
-            throw error;
-        }
+        const outputFilePath = tempImageFiles[index];
+        await downloadImage(imageUrl, outputFilePath);
     }));
 
     // Ensure the voiceover file exists
