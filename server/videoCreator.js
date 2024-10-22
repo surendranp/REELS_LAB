@@ -4,6 +4,7 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import ffmpegPath from 'ffmpeg-static';
 import { fileURLToPath } from 'url';
+import Jimp from 'jimp'; // Add Jimp for image processing
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,19 @@ async function downloadImage(imageUrl, outputPath) {
     }
 }
 
+async function resizeImageIfNeeded(imagePath) {
+    const image = await Jimp.read(imagePath);
+    const { width, height } = image.bitmap;
+
+    // Check if width and height are even, and resize if necessary
+    if (width % 2 !== 0 || height % 2 !== 0) {
+        const newWidth = width % 2 === 0 ? width : width + 1; // Make width even
+        const newHeight = height % 2 === 0 ? height : height + 1; // Make height even
+        await image.resize(newWidth, newHeight).writeAsync(imagePath);
+        console.log(`Resized image to even dimensions: ${imagePath}`);
+    }
+}
+
 async function createReel(images, voiceOverPath, duration) {
     const outputDir = path.join(__dirname, '../output');
     const outputPath = path.join(outputDir, 'reel.mp4');
@@ -36,15 +50,16 @@ async function createReel(images, voiceOverPath, duration) {
 
     console.log('FFmpeg path:', ffmpegPath);
 
-    // Download related images from URLs
+    // Download and resize related images from URLs
     const tempImageFiles = [];
     await Promise.all(images.slice(1).map(async (imageUrl, index) => {
         const outputFilePath = path.join(__dirname, '../uploads', `image${index}.jpg`);
         try {
             await downloadImage(imageUrl, outputFilePath);
+            await resizeImageIfNeeded(outputFilePath); // Resize the image if necessary
             tempImageFiles.push(outputFilePath);
         } catch (error) {
-            console.error(`Failed to download image ${imageUrl}:`, error);
+            console.error(`Failed to download or process image ${imageUrl}:`, error);
         }
     }));
 
