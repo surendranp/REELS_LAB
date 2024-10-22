@@ -14,17 +14,23 @@ async function createReel(images, userImagePath, voiceOver, duration) {
     const outputDir = path.join(__dirname, '../output');
     const outputPath = path.join(outputDir, 'reel.mp4');
 
+    // Ensure output directory exists
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
         console.log('Output directory created:', outputDir);
     }
 
-    const tempImageFiles = images.map((_, index) => {
-        return path.join(__dirname, '../uploads', `image${index}.jpg`);
-    });
+    // Validate input files
+    const tempImageFiles = images.map((_, index) => path.join(__dirname, '../uploads', `image${index}.jpg`));
+    const allImages = [userImagePath, ...tempImageFiles];
 
-    const allImages = [userImagePath, ...images];
+    // Check if user image exists
+    if (!fs.existsSync(userImagePath)) {
+        console.error(`User image not found: ${userImagePath}`);
+        throw new Error('User image not found.');
+    }
 
+    // Download images
     await Promise.all(images.map(async (imageUrl, index) => {
         try {
             const response = await fetch(imageUrl);
@@ -40,27 +46,31 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         }
     }));
 
+    // Log the images and voiceover
     console.log('User image path:', userImagePath);
-    console.log('Voiceover path:', voiceOver);
     tempImageFiles.forEach((file, index) => {
         console.log(`Image file ${index}:`, file);
     });
 
+    // Check voiceover
+    if (!fs.existsSync(voiceOver)) {
+        console.error('Voiceover file not found.');
+        throw new Error('Voiceover file not found.');
+    } else {
+        console.log('Voiceover path:', voiceOver);
+    }
+
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
-        command.input(userImagePath).inputOptions([`-t ${duration / allImages.length}`]);
+        // Use the user image and add all temporary images
+        command.input(userImagePath).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
 
         tempImageFiles.forEach((file) => {
-            command.input(file).inputOptions([`-t ${duration / allImages.length}`]);
+            command.input(file).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
         });
 
-        if (fs.existsSync(voiceOver)) {
-            command.input(voiceOver);
-        } else {
-            console.error('Voiceover file not found.');
-            reject(new Error('Voiceover file not found.'));
-        }
+        command.input(voiceOver);
 
         console.log('FFmpeg command:', command);
 
@@ -69,20 +79,18 @@ async function createReel(images, userImagePath, voiceOver, duration) {
             '-c:v libx264',
             '-c:a aac',
             '-pix_fmt yuv420p',
-            '-shortest',
             '-movflags +faststart',
             '-loglevel debug' // Enable verbose logging
         ])
         .output(outputPath)
         .on('end', () => {
             console.log('Video successfully created:', outputPath);
+            // Clean up temporary image files
             tempImageFiles.forEach(file => fs.unlinkSync(file));
             resolve(outputPath);
         })
         .on('error', (err) => {
             console.error('Error creating reel:', err.message);
-            console.error('FFmpeg error details:', err);
-            tempImageFiles.forEach(file => fs.unlinkSync(file));
             reject(err);
         })
         .on('stderr', (stderrLine) => {
