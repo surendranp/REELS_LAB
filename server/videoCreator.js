@@ -46,10 +46,13 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         }
     }));
 
-    // Log the images and voiceover
-    console.log('User image path:', userImagePath);
+    // Check downloaded images and voiceover
     tempImageFiles.forEach((file, index) => {
-        console.log(`Image file ${index}:`, file);
+        if (!fs.existsSync(file)) {
+            console.error(`Downloaded image not found: ${file}`);
+        } else {
+            console.log(`Image file ${index} exists: ${file}, Size: ${fs.statSync(file).size} bytes`);
+        }
     });
 
     // Check voiceover
@@ -57,7 +60,7 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         console.error('Voiceover file not found.');
         throw new Error('Voiceover file not found.');
     } else {
-        console.log('Voiceover path:', voiceOver);
+        console.log('Voiceover path:', voiceOver, `Size: ${fs.statSync(voiceOver).size} bytes`);
     }
 
     return new Promise((resolve, reject) => {
