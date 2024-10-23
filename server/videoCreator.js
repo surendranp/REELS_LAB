@@ -66,26 +66,36 @@ async function createReel(images, userImagePath, voiceOver, duration) {
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
-        // Use the user image and add all temporary images
+        // Add user image
         command.input(userImagePath).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
 
+        // Add temporary images
         tempImageFiles.forEach((file) => {
             command.input(file).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
         });
 
+        // Add voiceover
         command.input(voiceOver);
 
-        console.log('FFmpeg command:', command);
+        console.log('FFmpeg command initialized.');
 
         command.outputOptions([
             '-r 30', // 30 FPS
-            '-c:v libx264',
-            '-c:a aac',
-            '-pix_fmt yuv420p',
-            '-movflags +faststart',
+            '-c:v libx264', // Use H.264 codec for video
+            '-c:a aac', // Use AAC codec for audio
+            '-strict experimental', // Strict experimental to allow audio codecs
+            '-pix_fmt yuv420p', // Ensure compatibility with most players
+            '-shortest', // Stop video when audio ends
+            '-movflags +faststart', // Optimize for web streaming
             '-loglevel debug' // Enable verbose logging
         ])
         .output(outputPath)
+        .on('start', (commandLine) => {
+            console.log('FFmpeg command: ', commandLine);
+        })
+        .on('stderr', (stderrLine) => {
+            console.log('FFmpeg stderr:', stderrLine);
+        })
         .on('end', () => {
             console.log('Video successfully created:', outputPath);
             // Clean up temporary image files
@@ -95,9 +105,6 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         .on('error', (err) => {
             console.error('Error creating reel:', err.message);
             reject(err);
-        })
-        .on('stderr', (stderrLine) => {
-            console.log('FFmpeg stderr:', stderrLine);
         })
         .run();
     });
