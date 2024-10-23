@@ -1,14 +1,36 @@
-const ffmpeg = require('fluent-ffmpeg');
-const fetch = require('node-fetch');
-const sharp = require('sharp');
-const path = require('path');
-const fs = require('fs');
+import ffmpeg from 'fluent-ffmpeg';
+import path from 'path';
+import fs from 'fs';
+import fetch from 'node-fetch';
+import ffmpegPath from 'ffmpeg-static';
+import { fileURLToPath } from 'url';
 
-// Function to create a video from images
-async function createVideo(images, duration) {
-    const tempImageFiles = [];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-    // Download and resize images
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+async function createReel(images, userImagePath, voiceOver, duration) {
+    const outputDir = path.join(__dirname, '../output');
+    const outputPath = path.join(outputDir, 'reel.mp4');
+
+    // Ensure output directory exists
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+        console.log('Output directory created:', outputDir);
+    }
+
+    // Validate input files
+    const tempImageFiles = images.map((_, index) => path.join(__dirname, '../uploads', `image${index}.jpg`));
+    const allImages = [userImagePath, ...tempImageFiles];
+
+    // Check if user image exists
+    if (!fs.existsSync(userImagePath)) {
+        console.error(`User image not found: ${userImagePath}`);
+        throw new Error('User image not found.');
+    }
+
+    // Download images
     await Promise.all(images.map(async (imageUrl, index) => {
         try {
             const response = await fetch(imageUrl);
@@ -16,54 +38,80 @@ async function createVideo(images, duration) {
                 throw new Error(`Failed to download image: ${response.statusText}`);
             }
             const buffer = await response.buffer();
-            const tempFilePath = path.join(__dirname, `temp_image_${index}.jpg`);
-
-            // Resize the image before saving
-            await sharp(buffer)
-                .resize({ width: 1280 }) // Resize to a maximum width of 1280px
-                .toFile(tempFilePath);
-            
-            console.log(`Downloaded and resized image ${index}:`, tempFilePath);
-            tempImageFiles.push(tempFilePath);
+            fs.writeFileSync(tempImageFiles[index], buffer);
+            console.log(`Downloaded image ${index}:`, tempImageFiles[index]);
         } catch (error) {
-            console.error(`Error downloading or processing image ${index}:`, error);
+            console.error(`Error downloading image ${index}:`, error);
             throw error;
         }
     }));
 
-    // Adjust duration for each image
-    const adjustedDuration = duration / (tempImageFiles.length); // Adjusted duration for each image
+    // Check downloaded images
+    tempImageFiles.forEach((file, index) => {
+        if (!fs.existsSync(file)) {
+            console.error(`Downloaded image not found: ${file}`);
+            throw new Error(`Downloaded image not found: ${file}`);
+        } else {
+            console.log(`Image file ${index} exists: ${file}, Size: ${fs.statSync(file).size} bytes`);
+        }
+    });
 
-    // Create video using FFmpeg
+    // Check voiceover file
+    if (!fs.existsSync(voiceOver)) {
+        console.error('Voiceover file not found.');
+        throw new Error('Voiceover file not found.');
+    } else {
+        console.log('Voiceover path:', voiceOver, `Size: ${fs.statSync(voiceOver).size} bytes`);
+    }
+
+    // FFmpeg video creation process
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
-        // Add images to FFmpeg command
+        // Add user image with scaling filter to ensure dimensions are divisible by 2
+        command.input(userImagePath).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`])
+               .videoFilter('scale=trunc(iw/2)*2:trunc(ih/2)*2'); // Ensure even width and height
+
+        // Add downloaded images with the same scaling filter
         tempImageFiles.forEach((file) => {
-            command.input(file)
-                .inputOptions(['-loop 1', `-t ${adjustedDuration}`]); // Loop each image for adjusted duration
+            command.input(file).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`])
+                   .videoFilter('scale=trunc(iw/2)*2:trunc(ih/2)*2'); // Ensure even width and height
         });
 
-        // Set output options
-        command
-            .outputOptions('-c:v libx264') // Video codec
-            .outputOptions('-pix_fmt yuv420p') // Pixel format
-            .output('output_video.mp4') // Output video file
-            .on('end', () => {
-                console.log('Video created successfully.');
-                // Cleanup temp files
-                tempImageFiles.forEach((file) => fs.unlinkSync(file));
-                resolve('output_video.mp4');
-            })
-            .on('error', (err) => {
-                console.error('Error creating video:', err);
-                // Cleanup temp files
-                tempImageFiles.forEach((file) => fs.unlinkSync(file));
-                reject(err);
-            })
-            .run();
+        // Add voiceover
+        command.input(voiceOver);
+
+        console.log('FFmpeg command initialized.');
+
+        command.outputOptions([
+            '-r 30', // 30 FPS
+            '-c:v libx264', // Use H.264 codec for video
+            '-c:a aac', // Use AAC codec for audio
+            '-strict experimental', // Use experimental AAC codec
+            '-pix_fmt yuv420p', // Ensure compatibility with most players
+            '-shortest', // Stop video when audio ends
+            '-movflags +faststart', // Optimize for web streaming
+            '-loglevel verbose' // Increase verbosity for troubleshooting
+        ])
+        .output(outputPath)
+        .on('start', (commandLine) => {
+            console.log('FFmpeg command: ', commandLine);
+        })
+        .on('stderr', (stderrLine) => {
+            console.error('FFmpeg stderr:', stderrLine);  // Log detailed FFmpeg errors
+        })
+        .on('end', () => {
+            console.log('Video successfully created:', outputPath);
+            // Clean up temporary image files after creating the video
+            tempImageFiles.forEach(file => fs.unlinkSync(file));
+            resolve(outputPath);
+        })
+        .on('error', (err) => {
+            console.error('Error creating reel:', err.message);
+            reject(err);
+        })
+        .run();
     });
 }
 
-// Export the function using CommonJS syntax
-module.exports = createVideo;
+export { createReel };
