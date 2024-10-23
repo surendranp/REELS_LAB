@@ -5,46 +5,55 @@ import { generateRelatedImages } from './imageGenerator.js';
 import { generateVoiceOver } from './voiceGenerator.js';
 import { createReel } from './videoCreator.js';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 dotenv.config();
 
 const app = express();
-const upload = multer({ dest: path.join(process.cwd(), 'uploads') });
+const uploadsDir = path.join(process.cwd(), 'uploads');
 
-app.use('/output', express.static(path.join(process.cwd(), 'output')));
-app.use(express.static(path.join(process.cwd(), 'public')));
+// Ensure uploads directory exists
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('Uploads directory created:', uploadsDir);
+}
 
-app.post('/generate-reel', upload.single('image'), async (req, res) => {
-    console.log('Request body:', req.body);
-    console.log('Uploaded file:', req.file);
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-    const { description, duration } = req.body;
-    const userImagePath = req.file.path;  // User-uploaded image
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir); // Save uploaded files to the uploads directory
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname); // Keep original filename
+    },
+});
+const upload = multer({ storage: storage });
 
+// Endpoint to handle reel creation
+app.post('/create-reel', upload.single('userImage'), async (req, res) => {
     try {
-        const query = description.split(' ')[0];
-        console.log('Query for related images:', query);
+        const { description, duration } = req.body;
+        const userImagePath = req.file.path;
+
+        // Extract query from description
+        const query = description; // Adjust this as needed to extract relevant keywords
 
         const relatedImages = await generateRelatedImages(query);
-        console.log('Related images:', relatedImages);
+        const voiceOverPath = await generateVoiceOver(description);
 
-        const voiceOver = await generateVoiceOver(description);
-        console.log('Voiceover saved at:', voiceOver);
+        const finalVideoPath = await createReel(relatedImages, userImagePath, voiceOverPath, duration);
 
-        const reel = await createReel(relatedImages, userImagePath, voiceOver, duration);
-        console.log('Reel created at:', reel);
-
-        res.json({ message: 'Reel generated!', reelUrl: `/output/${path.basename(reel)}` }); // Updated to reelUrl
+        res.json({ message: 'Reel created successfully!', videoPath: finalVideoPath });
     } catch (error) {
-        console.error('Error in /generate-reel route:', error);
-        res.status(500).json({ message: error.message || 'Error generating reel.' });
+        console.error('Error in /create-reel:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
-});
-
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

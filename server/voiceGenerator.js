@@ -8,6 +8,14 @@ const { ELEVEN_LABS_API_KEY } = process.env;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Define audio directory
+const audioDir = path.join(__dirname, '../audio');
+
+// Create audio directory if it doesn't exist
+if (!fs.existsSync(audioDir)) {
+    fs.mkdirSync(audioDir, { recursive: true });
+}
+
 async function generateVoiceOver(text) {
     const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Ensure this is the correct voice ID for your use case
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
@@ -46,7 +54,7 @@ async function generateVoiceOver(text) {
     const data = await response.arrayBuffer(); // Get the audio data as an array buffer
 
     // Save the audio buffer to a file
-    const voiceoverPath = path.join(__dirname, '../uploads', 'voiceover.mp3'); // Path to save voiceover
+    const voiceoverPath = path.join(audioDir, 'voiceover.mp3'); // Path to save voiceover
     fs.writeFileSync(voiceoverPath, Buffer.from(data)); // Write buffer data to file
 
     console.log('Voiceover saved at:', voiceoverPath); // Log the saved file path

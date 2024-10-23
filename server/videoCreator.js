@@ -8,20 +8,23 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Define directories
+const outputDir = path.join(__dirname, '../output');
+const uploadsDir = path.join(__dirname, '../uploads');
+
+// Create output directory if it doesn't exist
+if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+    console.log('Output directory created:', outputDir);
+}
+
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 async function createReel(images, userImagePath, voiceOver, duration) {
-    const outputDir = path.join(__dirname, '../output');
     const outputPath = path.join(outputDir, 'reel.mp4');
 
-    // Ensure output directory exists
-    if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-        console.log('Output directory created:', outputDir);
-    }
-
     // Validate input files
-    const tempImageFiles = images.map((_, index) => path.join(__dirname, '../uploads', `image${index}.jpg`));
+    const tempImageFiles = images.map((_, index) => path.join(uploadsDir, `image${index}.jpg`));
     const allImages = [userImagePath, ...tempImageFiles];
 
     // Check if user image exists
