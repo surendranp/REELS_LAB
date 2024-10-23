@@ -15,7 +15,7 @@ document.getElementById('reel-form').addEventListener('submit', async (event) =>
 
     try {
         // Step 1: Upload Image and generate the reel
-        const response = await fetch('/generate-reel', {
+        const response = await fetch('/create-reel', {
             method: 'POST',
             body: formData,
         });
