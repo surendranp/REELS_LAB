@@ -30,7 +30,7 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         throw new Error('User image not found.');
     }
 
-    // Download images from the URLs
+    // Download images
     await Promise.all(images.map(async (imageUrl, index) => {
         try {
             const response = await fetch(imageUrl);
@@ -68,12 +68,14 @@ async function createReel(images, userImagePath, voiceOver, duration) {
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
-        // Add user image
-        command.input(userImagePath).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
+        // Add user image with scaling filter to ensure dimensions are divisible by 2
+        command.input(userImagePath).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`])
+               .videoFilter('scale=trunc(iw/2)*2:trunc(ih/2)*2'); // Ensure even width and height
 
-        // Add downloaded images
+        // Add downloaded images with the same scaling filter
         tempImageFiles.forEach((file) => {
-            command.input(file).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
+            command.input(file).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`])
+                   .videoFilter('scale=trunc(iw/2)*2:trunc(ih/2)*2'); // Ensure even width and height
         });
 
         // Add voiceover
