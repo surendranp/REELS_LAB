@@ -4,6 +4,7 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import ffmpegPath from 'ffmpeg-static';
 import { fileURLToPath } from 'url';
+import sharp from 'sharp'; // Import sharp for image validation
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,10 @@ async function createReel(images, userImagePath, voiceOver, duration) {
             const buffer = await response.buffer();
             fs.writeFileSync(tempImageFiles[index], buffer);
             console.log(`Downloaded image ${index}:`, tempImageFiles[index]);
+            
+            // Check image validity
+            const imageMetadata = await sharp(tempImageFiles[index]).metadata();
+            console.log(`Image ${index} metadata:`, imageMetadata);
         } catch (error) {
             console.error(`Error downloading image ${index}:`, error);
             throw error;
@@ -62,13 +67,12 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         const command = ffmpeg();
 
         command.input(userImagePath)
-               .inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`])
+               .inputOptions(['-loop 1', `-t ${duration / (tempImageFiles.length + 1)}`]) // Loop the user image
                .videoFilter('scale=trunc(iw/2)*2:trunc(ih/2)*2');
 
         tempImageFiles.forEach((file) => {
             command.input(file)
-                   .inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`])
-                   .videoFilter('scale=trunc(iw/2)*2:trunc(ih/2)*2');
+                   .inputOptions(['-loop 1', `-t ${duration / (tempImageFiles.length + 1)}`]); // Loop each image
         });
 
         command.input(voiceOver)
@@ -80,7 +84,7 @@ async function createReel(images, userImagePath, voiceOver, duration) {
                    '-pix_fmt yuv420p',
                    '-shortest',
                    '-movflags +faststart',
-                   '-loglevel verbose'
+                   '-loglevel debug' // Use debug level for detailed logs
                ])
                .output(outputPath)
                .on('start', (commandLine) => {

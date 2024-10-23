@@ -1,4 +1,5 @@
 import fetch from 'node-fetch'; // Using ES module syntax
+import sharp from 'sharp'; // Import sharp for image validation
 const { UNSPLASH_ACCESS_KEY } = process.env;
 
 /**
