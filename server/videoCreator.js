@@ -30,7 +30,7 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         throw new Error('User image not found.');
     }
 
-    // Download images
+    // Download images from the URLs
     await Promise.all(images.map(async (imageUrl, index) => {
         try {
             const response = await fetch(imageUrl);
@@ -46,16 +46,17 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         }
     }));
 
-    // Check downloaded images and voiceover
+    // Check downloaded images
     tempImageFiles.forEach((file, index) => {
         if (!fs.existsSync(file)) {
             console.error(`Downloaded image not found: ${file}`);
+            throw new Error(`Downloaded image not found: ${file}`);
         } else {
             console.log(`Image file ${index} exists: ${file}, Size: ${fs.statSync(file).size} bytes`);
         }
     });
 
-    // Check voiceover
+    // Check voiceover file
     if (!fs.existsSync(voiceOver)) {
         console.error('Voiceover file not found.');
         throw new Error('Voiceover file not found.');
@@ -63,13 +64,14 @@ async function createReel(images, userImagePath, voiceOver, duration) {
         console.log('Voiceover path:', voiceOver, `Size: ${fs.statSync(voiceOver).size} bytes`);
     }
 
+    // FFmpeg video creation process
     return new Promise((resolve, reject) => {
         const command = ffmpeg();
 
         // Add user image
         command.input(userImagePath).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
 
-        // Add temporary images
+        // Add downloaded images
         tempImageFiles.forEach((file) => {
             command.input(file).inputOptions([`-t ${duration / (tempImageFiles.length + 1)}`]);
         });
@@ -83,22 +85,22 @@ async function createReel(images, userImagePath, voiceOver, duration) {
             '-r 30', // 30 FPS
             '-c:v libx264', // Use H.264 codec for video
             '-c:a aac', // Use AAC codec for audio
-            '-strict experimental', // Strict experimental to allow audio codecs
+            '-strict experimental', // Use experimental AAC codec
             '-pix_fmt yuv420p', // Ensure compatibility with most players
             '-shortest', // Stop video when audio ends
             '-movflags +faststart', // Optimize for web streaming
-            '-loglevel debug' // Enable verbose logging
+            '-loglevel verbose' // Increase verbosity for troubleshooting
         ])
         .output(outputPath)
         .on('start', (commandLine) => {
             console.log('FFmpeg command: ', commandLine);
         })
         .on('stderr', (stderrLine) => {
-            console.log('FFmpeg stderr:', stderrLine);
+            console.error('FFmpeg stderr:', stderrLine);  // Log detailed FFmpeg errors
         })
         .on('end', () => {
             console.log('Video successfully created:', outputPath);
-            // Clean up temporary image files
+            // Clean up temporary image files after creating the video
             tempImageFiles.forEach(file => fs.unlinkSync(file));
             resolve(outputPath);
         })
