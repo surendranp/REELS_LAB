@@ -52,6 +52,9 @@ app.post('/create-reel', upload.single('userImage'), async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+app.get('/', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;
