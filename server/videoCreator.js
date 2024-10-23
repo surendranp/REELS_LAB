@@ -65,4 +65,5 @@ async function createVideo(images, duration) {
     });
 }
 
+// Export the function using CommonJS syntax
 module.exports = createVideo;
