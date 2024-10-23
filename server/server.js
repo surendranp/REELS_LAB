@@ -19,7 +19,7 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
     console.log('Uploaded file:', req.file);
 
     const { description, duration } = req.body;
-    const userImagePath = req.file.path;  // User-uploaded image
+    const userImagePath = req.file.path;
 
     try {
         const query = description.split(' ')[0];
