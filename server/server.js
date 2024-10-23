@@ -34,7 +34,7 @@ app.post('/generate-reel', upload.single('image'), async (req, res) => {
         const reel = await createReel(relatedImages, userImagePath, voiceOver, duration);
         console.log('Reel created at:', reel);
 
-        res.json({ message: 'Reel generated!', reel: `/output/${path.basename(reel)}` });
+        res.json({ message: 'Reel generated!', reelUrl: `/output/${path.basename(reel)}` }); // Updated to reelUrl
     } catch (error) {
         console.error('Error in /generate-reel route:', error);
         res.status(500).json({ message: error.message || 'Error generating reel.' });

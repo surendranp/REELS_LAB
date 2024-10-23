@@ -8,30 +8,30 @@
 </head>
 <body>
     <div class="container">
-    <h1>Reels Lab</h1>
-    <div class="col-1">
-    <form id="reel-form" enctype="multipart/form-data">
-        <div>
-            <label for="image">Upload Image:</label>
-            <input type="file" id="image" name="image" accept="image/*" required>
+        <h1>Reels Lab</h1>
+        <div class="col-1">
+            <form id="reel-form" enctype="multipart/form-data">
+                <div>
+                    <label for="image">Upload Image:</label>
+                    <input type="file" id="image" name="image" accept="image/*" required>
+                </div>
+                <div>
+                    <label for="description">Description:</label>
+                    <input type="text" id="description" name="description" required>
+                </div>
+                <div>
+                    <label for="duration">Reel Duration (seconds):</label>
+                    <input type="number" id="duration" name="duration" required>
+                </div>
+                <button type="submit">Generate Reel</button>
+            </form>
         </div>
-        <div>
-            <label for="description">Description:</label>
-            <input type="text" id="description" name="description" required>
+        <div class="col-2">
+            <div id="result"></div> <!-- This will hold the video and download link -->
+            <div id="loader" style="display: none;">Loading...</div> <!-- Loader animation -->
+            <div id="status-messages"></div> <!-- For success messages -->
         </div>
-        <div>
-            <label for="duration">Reel Duration (seconds):</label>
-            <input type="number" id="duration" name="duration" required>
-        </div>
-        <button type="submit">Generate Reel</button>
-    </form>
-</div>
-<div class="col-2">
-    <div id="result"></div> <!-- This will hold the video and download link -->
-    <div id="loader" style="display: none;">Loading...</div> <!-- Loader animation -->
-    <div id="status-messages"></div> <!-- For success messages -->
-</div>
-</div>
+    </div>
     <script src="script.js"></script> <!-- Include your script -->
 </body>
 </html>
