@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const uploadsDir = path.join(process.cwd(), 'uploads');
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists 
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
     console.log('Uploads directory created:', uploadsDir);
