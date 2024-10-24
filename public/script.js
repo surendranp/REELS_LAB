@@ -41,9 +41,9 @@ document.getElementById('reel-form').addEventListener('submit', async (event) =>
         // Display video and download link
         result.innerHTML = `
             <p>${data.message}</p>
-            <video controls src="${data.reelUrl}" style="max-width: 10%; height: auto;"></video>
+            <video controls src="${data.videoPath}" style="max-width: 10%; height: auto;"></video>
             <br>
-            <a href="${data.reelUrl}" download="reel.mp4" class="download-button">Download Video</a>
+            <a href="${data.videoPath}" download="reel.mp4" class="download-button">Download Video</a>
         `;
     } catch (error) {
         loader.style.display = 'none'; // Hide loader if there's an error

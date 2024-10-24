@@ -36,6 +36,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+// Log the Unsplash Access Key for debugging (remove after resolving)
+console.log('Unsplash Access Key:', process.env.UNSPLASH_ACCESS_KEY);
+
 // Endpoint to handle reel creation
 app.post('/create-reel', upload.single('userImage'), async (req, res) => {
     try {

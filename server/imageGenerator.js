@@ -7,7 +7,7 @@ const { UNSPLASH_ACCESS_KEY } = process.env;
  * @returns {Promise<string[]>} - A promise that resolves to an array of image URLs.
  */
 async function generateRelatedImages(query) {
-    const url = `https://api.unsplash.com/search/photos?query=${query}&client_id=${UNSPLASH_ACCESS_KEY}`;
+    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&client_id=${UNSPLASH_ACCESS_KEY}`;
     console.log('Fetching images from Unsplash:', url); // Log the request URL
     
     const response = await fetch(url);
