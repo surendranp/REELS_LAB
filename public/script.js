@@ -23,5 +23,5 @@ document.getElementById('videoForm').addEventListener('submit', async (e) => {
         downloadContainer.style.display = 'block'; // Show the download container
     } catch (error) {
         console.error('Error:', error);
-    }
+    } 
 });
