@@ -1,7 +1,8 @@
 {
-  "name": "reels_lab",
+  "name": "test_reels",
   "version": "1.0.0",
-  "main": "server.js",
+  "description": "",
+  "main": "server/server.js",
   "type": "module",
   "scripts": {
     "start": "node server/server.js"

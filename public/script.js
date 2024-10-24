@@ -1,52 +1,33 @@
-document.getElementById('reel-form').addEventListener('submit', async (event) => {
+document.getElementById('reelForm').addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.target);
-    const result = document.getElementById('result');
-    const statusMessages = document.getElementById('status-messages');
-    const loader = document.getElementById('loader');
-
-    // Clear previous messages and results
-    statusMessages.innerHTML = '';
-    result.innerHTML = '';
-
-    // Show loader
-    loader.style.display = 'block';
 
     try {
-        // Step 1: Upload Image and generate the reel
         const response = await fetch('/create-reel', {
             method: 'POST',
             body: formData,
         });
 
-        // Hide loader when response is received
-        loader.style.display = 'none';
-
-        // Check for success response
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to generate reel.');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
 
         const data = await response.json();
-
-        // Update status messages for each successful step
-        statusMessages.innerHTML += `<p>Image uploaded successfully (✓)</p>`;
-        statusMessages.innerHTML += `<p>Text added successfully (✓)</p>`;
-        statusMessages.innerHTML += `<p>Duration set successfully (✓)</p>`;
-        statusMessages.innerHTML += `<p>Voice generated successfully (✓)</p>`;
-        statusMessages.innerHTML += `<p>Video reel created successfully (✓)</p>`;
-
-        // Display video and download link
-        result.innerHTML = `
-            <p>${data.message}</p>
-            <video controls src="${data.videoPath}" style="max-width: 10%; height: auto;"></video>
-            <br>
-            <a href="${data.videoPath}" download="reel.mp4" class="download-button">Download Video</a>
-        `;
+        displayRelatedImages(data.relatedImages);
     } catch (error) {
-        loader.style.display = 'none'; // Hide loader if there's an error
-        statusMessages.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+        console.error('Error creating reel:', error);
     }
 });
+
+function displayRelatedImages(images) {
+    const relatedImagesDiv = document.getElementById('relatedImages');
+    relatedImagesDiv.innerHTML = ''; // Clear previous images
+
+    images.forEach(url => {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = 'Related Image';
+        img.style.width = '200px'; // Adjust size as needed
+        img.style.margin = '10px';
+        relatedImagesDiv.appendChild(img);
+    });
+}

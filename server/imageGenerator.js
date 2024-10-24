@@ -1,22 +1,26 @@
 import fetch from 'node-fetch';
-const { UNSPLASH_ACCESS_KEY } = process.env;
 
-console.log('Unsplash Access Key:', UNSPLASH_ACCESS_KEY); // Log the access key for debugging
+// Function to fetch related images from Unsplash
+export const generateRelatedImages = async (query) => {
+    const accessKey = process.env.UNSPLASH_ACCESS_KEY; // Retrieve the Unsplash access key from environment variables
+    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&client_id=${accessKey}`;
 
-async function generateRelatedImages(query) {
-    const url = `https://api.unsplash.com/search/photos?query=${query}&client_id=${UNSPLASH_ACCESS_KEY}`;
-    console.log('Fetching images from Unsplash:', url); // Log the request URL
-    
-    const response = await fetch(url);
+    console.log('Fetching from Unsplash:', url); // Log the request URL
 
-    if (!response.ok) {
-        const errorText = await response.text(); // Capture response text for better debugging
-        console.error('Error fetching from Unsplash:', response.status, errorText);
-        throw new Error(`Failed to fetch images from Unsplash: ${response.status} ${response.statusText}`);
+    try {
+        const response = await fetch(url);
+        
+        // Check if the response is not OK (e.g., Unauthorized)
+        if (!response.ok) {
+            throw new Error(`Failed to fetch images from Unsplash: ${response.statusText} (Status Code: ${response.status})`);
+        }
+
+        const data = await response.json();
+        
+        // Return an array of image URLs
+        return data.results.map(image => image.urls.small);
+    } catch (error) {
+        console.error('Error fetching from Unsplash:', error);
+        throw error; // Rethrow the error for handling in the calling function
     }
-
-    const data = await response.json();
-    return data.results.map(image => image.urls.regular);
-}
-
-export { generateRelatedImages };
+};
