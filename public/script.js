@@ -1,33 +1,27 @@
-document.getElementById('reelForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
+document.getElementById('videoForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); // Prevent default form submission
 
-    const formData = new FormData(event.target);
+    const formData = new FormData(e.target);
 
     try {
         const response = await fetch('/create-reel', {
             method: 'POST',
-            body: formData,
+            body: formData
         });
 
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) {
+            throw new Error('Failed to create video');
+        }
 
-        const data = await response.json();
-        displayRelatedImages(data.relatedImages);
+        const { videoPath } = await response.json(); // Assuming your server responds with the video path
+
+        // Show the download link
+        const downloadContainer = document.getElementById('downloadContainer');
+        const downloadLink = document.getElementById('downloadLink');
+
+        downloadLink.href = videoPath; // Set the href to the video file path
+        downloadContainer.style.display = 'block'; // Show the download container
     } catch (error) {
-        console.error('Error creating reel:', error);
+        console.error('Error:', error);
     }
 });
-
-function displayRelatedImages(images) {
-    const relatedImagesDiv = document.getElementById('relatedImages');
-    relatedImagesDiv.innerHTML = ''; // Clear previous images
-
-    images.forEach(url => {
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = 'Related Image';
-        img.style.width = '200px'; // Adjust size as needed
-        img.style.margin = '10px';
-        relatedImagesDiv.appendChild(img);
-    });
-}

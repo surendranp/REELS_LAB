@@ -1,24 +1,17 @@
 {
-  "name": "test_reels",
+  "name": "reels-lab",
   "version": "1.0.0",
-  "description": "",
+  "description": "Video maker project that fetches related images and creates a video.",
   "main": "server/server.js",
   "type": "module",
   "scripts": {
     "start": "node server/server.js"
   },
   "dependencies": {
-    "@ffmpeg/ffmpeg": "^0.12.10",
-    "axios": "^0.21.1",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "ffmpeg-static": "^5.2.0",
-    "fluent-ffmpeg": "^2.1.3",
-    "fs": "0.0.1-security",
-    "jimp": "^1.6.0",
-    "multer": "^1.4.3",
-    "node-fetch": "^2.7.0",
-    "path": "^0.12.7",
-    "sharp": "^0.33.5"
+    "express": "^your_version",
+    "multer": "^your_version",
+    "node-fetch": "^your_version",
+    "dotenv": "^your_version",
+    "fluent-ffmpeg": "^your_version"
   }
 }
